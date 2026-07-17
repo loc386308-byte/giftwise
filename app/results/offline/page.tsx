@@ -110,9 +110,30 @@ function StoreCard({
           {/* Meta info */}
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--color-text-light)' }}>
             <span>🚗 {distanceKm} km</span>
-            {store.openHours && <span>⏰ {store.openHours}</span>}
-            {store.phoneNumber && <span>📞 {store.phoneNumber}</span>}
+            {store.hours && <span>⏰ {store.hours}</span>}
+            {store.phone && <span>📞 {store.phone}</span>}
           </div>
+
+          {/* What the store sells */}
+          {store.features && store.features.length > 0 && (
+            <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+              {store.features.map((f, i) => (
+                <span
+                  key={i}
+                  style={{
+                    fontSize: '0.68rem',
+                    padding: '0.15rem 0.5rem',
+                    background: 'var(--gradient-subtle)',
+                    color: 'var(--color-text-muted)',
+                    borderRadius: '999px',
+                    border: '1px solid var(--color-border-light)',
+                  }}
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Get directions */}
           <a
@@ -192,7 +213,7 @@ function MapVisualization({
         <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
           {stores.slice(0, 3).map((s, i) => (
             <span
-              key={s.placeId}
+              key={s.id}
               style={{
                 fontSize: '0.72rem',
                 padding: '0.2rem 0.5rem',
@@ -352,10 +373,10 @@ function OfflineInner() {
                 </p>
                 {result.stores.map((store, index) => (
                   <StoreCard
-                    key={store.placeId}
+                    key={store.id}
                     store={store}
                     index={index}
-                    selected={selectedStore?.placeId === store.placeId}
+                    selected={selectedStore?.id === store.id}
                     onClick={() => setSelectedStore(store)}
                   />
                 ))}

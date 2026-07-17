@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MOCK_SUGGESTIONS_BY_OCCASION } from '@/lib/mock-data';
 import { GiftSuggestion, QuizAnswers } from '@/types';
 
-// Simple in-memory rate limiting (production: use Redis)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 function getRateLimit(ip: string): boolean {
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
-
   if (!entry || now > entry.resetAt) {
     rateLimitMap.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
     return true;
   }
-
   if (entry.count >= 20) return false;
   entry.count++;
   return true;
@@ -32,151 +28,258 @@ async function callAnthropicAPI(prompt: string): Promise<GiftSuggestion[]> {
     },
     body: JSON.stringify({
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: 2048,
+      max_tokens: 3000,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
 
   if (!response.ok) throw new Error(`Anthropic API error: ${response.status}`);
-
   const data = await response.json();
   const content = data.content?.[0]?.text || '';
-
-  // Extract JSON from response
   const jsonMatch = content.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('No JSON in response');
-
   const parsed = JSON.parse(jsonMatch[0]);
   return parsed.suggestions || [];
 }
 
+// Budget range parser → returns [min, max] in VND
+function parseBudget(budget: string): [number, number] {
+  const nums = budget.replace(/\./g, '').match(/\d+/g)?.map(Number) || [];
+  if (nums.length >= 2) return [nums[0] * 1000, nums[1] * 1000];
+  if (nums.length === 1) return [nums[0] * 1000 * 0.7, nums[0] * 1000 * 1.3];
+  return [100000, 500000];
+}
+
+type RawGift = {
+  name: string;
+  emoji: string;
+  category: string;
+  price: number;
+  reason: string;
+  searchKeyword?: string;
+};
+
 function generateSmartMockSuggestions(answers: QuizAnswers): GiftSuggestion[] {
   const gender = answers.gender.toLowerCase();
   const age = answers.ageRange.toLowerCase();
+  const rel = answers.relationship.toLowerCase();
+  const occasion = answers.occasion.toLowerCase();
+  const interests = answers.interests || [];
+  const personality = answers.personality || [];
+
   const isKid = age.includes('dưới 12') || age.includes('13-18');
   const isOlder = age.includes('trên 50') || age.includes('36-50');
-  
-  // Primary interest matching
-  const interest = answers.interests?.[0] || 'mặc định';
-  
-  let rawGifts: { name: string; emoji: string; category: string; price: number; reason: string }[] = [];
+  const isMale = gender === 'nam';
+  const isFemale = gender === 'nữ';
 
-  // Match gifts by interest & demographics
-  if (interest === 'gaming' || answers.personality?.includes('yêu công nghệ')) {
-    if (isKid) {
-      rawGifts = [
-        { name: 'Máy chơi game cầm tay mini 400 trò', emoji: '🎮', category: 'Giải trí', price: 180000, reason: 'Phù hợp để giải trí lành mạnh sau giờ học căng thẳng.' },
-        { name: 'Đèn LED Neon decor bàn học hình tay cầm game', emoji: '💡', category: 'Trang trí', price: 150000, reason: 'Tạo không gian học tập cực cool và cá tính cho bé.' },
-        { name: 'Lót chuột cỡ lớn (Mousepad) chủ đề game', emoji: '🖱️', category: 'Phụ kiện', price: 85000, reason: 'Kích thước lớn thoải mái và chống trượt tốt.' },
-        { name: 'Mô hình lắp ráp Lego nhân vật game yêu thích', emoji: '🧱', category: 'Đồ chơi', price: 210000, reason: 'Rèn luyện khả năng tư duy sáng tạo và kiên nhẫn.' },
-        { name: 'Tai nghe gaming chụp tai có đèn LED màu sắc', emoji: '🎧', category: 'Công nghệ', price: 290000, reason: 'Thiết kế ôm tai êm ái cùng chất âm sống động.' },
-        { name: 'Giá treo tai nghe bằng nhựa ABS cao cấp', emoji: '📐', category: 'Phụ kiện', price: 90000, reason: 'Giúp góc học tập gọn gàng và khoa học hơn.' },
-      ];
-    } else {
-      rawGifts = [
-        { name: 'Bàn phím cơ không dây layout 75% gọn nhẹ', emoji: '⌨️', category: 'Công nghệ', price: 550000, reason: 'Mang lại cảm giác gõ êm ái khi làm việc và chơi game.' },
-        { name: 'Đèn LED RGB treo màn hình máy tính chống mỏi mắt', emoji: '💡', category: 'Thiết bị', price: 320000, reason: 'Bảo vệ thị lực khi làm việc và giải trí ban đêm.' },
-        { name: 'Tay cầm chơi game không dây bluetooth tiện lợi', emoji: '🎮', category: 'Giải trí', price: 380000, reason: 'Trải nghiệm chơi game mượt mà như trên console.' },
-        { name: 'Đế sạc nhanh không dây 3 trong 1 đa năng', emoji: '⚡', category: 'Công nghệ', price: 250000, reason: 'Sạc tiện lợi cho cả điện thoại, tai nghe và đồng hồ.' },
-        { name: 'Loa Bluetooth mini chống nước Bass cực trầm', emoji: '🔊', category: 'Công nghệ', price: 420000, reason: 'Thỏa thích tận hưởng âm nhạc mọi lúc mọi nơi.' },
-        { name: 'Cốc giữ nhiệt Coffee Inox 304 cao cấp', emoji: '🥤', category: 'Đồ gia dụng', price: 160000, reason: 'Giữ nhiệt tốt cho cả ngày dài làm việc tỉnh táo.' },
-      ];
-    }
-  } else if (interest === 'làm đẹp' || interest === 'thời trang' || answers.personality?.includes('yêu làm đẹp')) {
-    if (gender === 'nam') {
-      rawGifts = [
-        { name: 'Sáp vuốt tóc giữ nếp tự nhiên Clay Pomade', emoji: '🧴', category: 'Chăm sóc nam', price: 180000, reason: 'Giúp tạo kiểu tóc bảnh bao suốt cả ngày dài năng động.' },
-        { name: 'Túi đeo chéo mini vải canvas nam tính', emoji: '🎒', category: 'Thời trang', price: 150000, reason: 'Thiết kế gọn nhẹ, đa năng cho các buổi đi chơi phố.' },
-        { name: 'Ví da nam mini chống xước đựng thẻ ATM', emoji: '👛', category: 'Phụ kiện', price: 250000, reason: 'Chất liệu da cao cấp cực kỳ tinh tế và tối giản.' },
-        { name: 'Nước hoa chiết chính hãng hương gỗ nam tính 10ml', emoji: '🧪', category: 'Nước hoa', price: 220000, reason: 'Mùi hương lịch lãm, lưu hương lâu cực cuốn hút.' },
-        { name: 'Kính mát thời trang chống tia UV400', emoji: '🕶️', category: 'Phụ kiện', price: 160000, reason: 'Bảo vệ mắt tối ưu và tạo điểm nhấn thời trang cực ngầu.' },
-        { name: 'Thắt lưng da khóa tự động cao cấp', emoji: '🎗️', category: 'Phụ kiện', price: 280000, reason: 'Phụ kiện không thể thiếu tạo vẻ ngoài chỉn chu.' },
-      ];
-    } else {
-      rawGifts = [
-        { name: 'Son kem lì Romand màu đỏ đất trendy ngọt ngào', emoji: '💄', category: 'Mỹ phẩm', price: 155000, reason: 'Màu son tôn da, chất son mịn mượt dễ thương.' },
-        { name: 'Máy rửa mặt sóng âm silicon làm sạch sâu', emoji: '🧼', category: 'Thiết bị', price: 240000, reason: 'Hỗ trợ skincare hiệu quả cho làn da sạch mịn màng.' },
-        { name: 'Túi xách kẹp nách da PU phong cách retro', emoji: '👜', category: 'Thời trang', price: 210000, reason: 'Dễ phối đồ đi học, đi làm hay đi cà phê cuối tuần.' },
-        { name: 'Bộ cọ trang điểm cá nhân 13 món siêu mềm mại', emoji: '🖌️', category: 'Dụng cụ', price: 120000, reason: 'Đầy đủ cọ cơ bản giúp trang điểm tự nhiên mỗi ngày.' },
-        { name: 'Gương để bàn trang điểm có đèn LED cảm ứng', emoji: '🪞', category: 'Trang trí', price: 180000, reason: 'Hỗ trợ ánh sáng chuẩn khi makeup và decor phòng cực xinh.' },
-        { name: 'Lắc tay bạc ý S925 đính đá pha lê nhỏ lấp lánh', emoji: '💫', category: 'Trang sức', price: 280000, reason: 'Món quà trang sức tinh tế tôn lên nét thanh lịch của bạn nữ.' },
-      ];
-    }
-  } else if (interest === 'đọc sách') {
-    rawGifts = [
-      { name: 'Đèn LED đọc sách kẹp trang sách tiện lợi', emoji: '💡', category: 'Phụ kiện', price: 75000, reason: 'Ánh sáng vàng dịu bảo vệ mắt khi đọc ban đêm không phiền ai.' },
-      { name: 'Set Bookmark gỗ sồi khắc họa tiết cổ điển', emoji: '🔖', category: 'Lưu niệm', price: 60000, reason: 'Đánh dấu trang sách tinh tế và có giá trị lưu niệm cao.' },
-      { name: 'Cuốn sách bán chạy "Atomic Habits" bản đặc biệt', emoji: '📚', category: 'Sách', price: 125000, reason: 'Cuốn sách truyền cảm hứng thay đổi bản thân thiết thực nhất.' },
-      { name: 'Kệ đựng sách mini bằng gỗ tự nhiên để bàn', emoji: '🪵', category: 'Trang trí', price: 135000, reason: 'Giúp sắp xếp bàn làm việc gọn gàng và đẹp mắt hơn.' },
-      { name: 'Sổ tay bìa da cao cấp kèm bút ký kim loại', emoji: '✒️', category: 'Văn phòng', price: 190000, reason: 'Ghi lại những ý tưởng hay và kế hoạch cuộc sống hàng ngày.' },
-      { name: 'Gối tựa lưng cao su non êm ái hỗ trợ cột sống', emoji: '🛋️', category: 'Sức khỏe', price: 220000, reason: 'Giúp duy trì tư thế ngồi đọc sách thoải mái nhất trong nhiều giờ.' },
-    ];
-  } else if (interest === 'du lịch' || interest === 'thể thao') {
-    rawGifts = [
-      { name: 'Bình nước thể thao giữ nhiệt Inox 304 dung tích 1L', emoji: '🥤', category: 'Đồ dùng', price: 250000, reason: 'Dung tích lớn giữ lạnh đến 24h, rất hợp cho người vận động nhiều.' },
-      { name: 'Túi đeo bụng thể thao chống nước chạy bộ', emoji: '🏃', category: 'Phụ kiện', price: 95000, reason: 'Gọn gàng để điện thoại, chìa khóa khi chạy bộ hay tập gym.' },
-      { name: 'Gối chữ U kê cổ du lịch bằng cao su non êm ái', emoji: '✈️', category: 'Du lịch', price: 160000, reason: 'Nâng đỡ cổ vai gáy tốt trong những chuyến đi xa.' },
-      { name: 'Loa bluetooth chống nước IPX7 treo balo', emoji: '🔊', category: 'Công nghệ', price: 340000, reason: 'Khuấy động không khí các buổi dã ngoại ngoài trời cực vui.' },
-      { name: 'Balo phượt chống nước dã ngoại nhiều ngăn', emoji: '🎒', category: 'Du lịch', price: 390000, reason: 'Đựng đồ khoa học và chống chịu thời tiết tốt cho chuyến đi.' },
-      { name: 'Quạt cầm tay mini tích điện siêu mát', emoji: '🪭', category: 'Đồ dùng', price: 120000, reason: 'Xua tan nắng nóng nhanh chóng khi ra ngoài trời.' },
-    ];
-  } else if (interest === 'nấu ăn' || isOlder) {
-    rawGifts = [
-      { name: 'Thớt gỗ Teak decor đồ ăn sang trọng', emoji: '🪵', category: 'Đồ bếp', price: 190000, reason: 'Vừa thái thực phẩm vừa làm khay bày biện món ăn sống ảo cực đẹp.' },
-      { name: 'Set trà hoa thảo mộc an thần ngủ ngon', emoji: '🍵', category: 'Sức khỏe', price: 150000, reason: 'Món quà tinh tế thể hiện sự quan tâm sâu sắc đến sức khỏe.' },
-      { name: 'Máy đánh trứng, tạo bọt cafe cầm tay mini', emoji: '🥚', category: 'Đồ bếp', price: 120000, reason: 'Hỗ trợ đắc lực làm bánh, pha cafe bọt biển nhanh chóng.' },
-      { name: 'Bộ muỗng nĩa dao bằng gỗ sồi cao cấp', emoji: '🍴', category: 'Đồ bếp', price: 95000, reason: 'Chất liệu gỗ an toàn cho sức khỏe và thân thiện tự nhiên.' },
-      { name: 'Cốc thủy tinh 2 lớp cách nhiệt chịu nhiệt tốt', emoji: '🥛', category: 'Đồ dùng', price: 85000, reason: 'Thiết kế tinh xảo cầm không bị nóng tay khi đựng trà nóng.' },
-      { name: 'Tạp dề canvas dày dặn chống thấm nước', emoji: '🎽', category: 'Đồ dùng', price: 110000, reason: 'Bảo vệ quần áo tối ưu và tạo cảm hứng vào bếp nấu nướng.' },
-    ];
-  } else {
-    // General default dynamic gifts
-    rawGifts = [
-      { name: 'Nến thơm tinh dầu thiên nhiên dịu nhẹ', emoji: '🕯️', category: 'Trang trí', price: 135000, reason: 'Hương thơm dễ chịu thư giãn đầu óc sau ngày dài làm việc mệt mỏi.' },
-      { name: 'Đèn ngủ silicon hình chú vịt phát sáng ấm áp', emoji: '🦆', category: 'Trang trí', price: 160000, reason: 'Ánh sáng vàng dịu ấm áp mang lại giấc ngủ ngon và decor phòng ngủ.' },
-      { name: 'Bình giữ nhiệt Lock&Lock LHC4131BKR 450ml', emoji: '🥤', category: 'Đồ dùng', price: 265000, reason: 'Sản phẩm quốc dân chất lượng cao giữ nhiệt nóng lạnh cực tốt.' },
-      { name: 'Chậu cây sen đá mini để bàn làm việc', emoji: '🪴', category: 'Cây cảnh', price: 65000, reason: 'Mang sắc xanh dễ chịu tới góc làm việc, dễ chăm sóc không tốn công.' },
-      { name: 'Bộ thìa dĩa inox mạ vàng sang trọng', emoji: '🍴', category: 'Quà tặng', price: 120000, reason: 'Món quà lịch sự, thiết thực cho bữa ăn thêm phần sang trọng.' },
-      { name: 'Sổ tay Planner 365 ngày thiết lập kế hoạch', emoji: '📓', category: 'Văn phòng', price: 95000, reason: 'Giúp quản lý thời gian hiệu quả và xây dựng thói quen tốt.' },
-    ];
-  }
+  const [budgetMin, budgetMax] = parseBudget(answers.budget || '100.000đ - 500.000đ');
 
-  // Adjust reasons based on relationship
-  const rel = answers.relationship.toLowerCase();
-  const getCustomReason = (gift: typeof rawGifts[0]) => {
-    if (rel === 'người yêu') {
-      return `Món quà ngọt ngào thay lời muốn nói gửi tới người thương, vừa đáng yêu vừa cực kỳ hữu dụng mỗi ngày.`;
-    } else if (rel === 'bố/mẹ') {
-      return `Món quà ấm áp gửi tới bố mẹ thể hiện sự hiếu kính và quan tâm chăm sóc của bạn dành cho sức khỏe gia đình.`;
-    } else if (rel === 'bạn thân' || rel === 'bạn bè') {
-      return `Món quà siêu hợp gu cho đứa bạn thân chí cốt, bảo đảm nó sẽ thích mê và lấy ra khoe ngay lập tức!`;
-    } else if (rel === 'sếp' || rel === 'đồng nghiệp') {
-      return `Một lựa chọn lịch sự, chỉn chu rất thích hợp làm quà tặng công sở gắn kết tình đồng nghiệp hữu hảo.`;
-    }
-    return gift.reason;
+  const hasInterest = (...keys: string[]) =>
+    keys.some((k) => interests.some((i) => i.toLowerCase().includes(k)));
+  const hasPersonality = (...keys: string[]) =>
+    keys.some((k) => personality.some((p) => p.toLowerCase().includes(k)));
+
+  // --- Pool of ALL possible gifts, indexed by category ---
+  const giftPool: Record<string, RawGift[]> = {
+    gaming: [
+      { name: 'Bàn phím cơ không dây layout 75% RGB gọn nhẹ', emoji: '⌨️', category: 'Công nghệ', price: 750000, reason: 'Gõ phím êm ái, layout gọn cho cả gaming lẫn làm việc.', searchKeyword: 'bàn phím cơ không dây' },
+      { name: 'Tay cầm chơi game Bluetooth đa nền tảng', emoji: '🎮', category: 'Giải trí', price: 420000, reason: 'Trải nghiệm gaming mượt mà như console, kết nối đa thiết bị.', searchKeyword: 'tay cầm chơi game bluetooth' },
+      { name: 'Lót chuột gaming cỡ XL 900×400mm chống trượt', emoji: '🖱️', category: 'Phụ kiện', price: 115000, reason: 'Bề mặt rộng thoải mái, chống trượt tốt khi gaming căng thẳng.', searchKeyword: 'lót chuột gaming xl' },
+      { name: 'Đèn LED RGB nháy theo nhạc cho góc gaming', emoji: '💡', category: 'Trang trí', price: 95000, reason: 'Tạo không gian gaming đỉnh cao, lung linh màu sắc.', searchKeyword: 'đèn led rgb gaming' },
+      { name: 'Tai nghe gaming chụp tai có mic LED RGB', emoji: '🎧', category: 'Công nghệ', price: 390000, reason: 'Âm thanh vòm sống động, mic khử ồn tốt cho team play.', searchKeyword: 'tai nghe gaming chụp tai' },
+      { name: 'Chuột gaming không dây DPI cao có RGB', emoji: '🖱️', category: 'Công nghệ', price: 480000, reason: 'Độ chính xác cao, pin trâu, nhẹ tay khi chơi lâu giờ.', searchKeyword: 'chuột gaming không dây rgb' },
+      { name: 'Mô hình lắp ráp LEGO Creator 3in1 sáng tạo', emoji: '🧱', category: 'Đồ chơi', price: 320000, reason: 'Rèn tư duy không gian và sáng tạo cho người mê lắp ráp.', searchKeyword: 'lego creator 3in1' },
+      { name: 'Giá đỡ màn hình monitor nâng hạ linh hoạt', emoji: '🖥️', category: 'Phụ kiện', price: 560000, reason: 'Chỉnh độ cao màn hình tối ưu, giảm mỏi cổ khi chơi game lâu.', searchKeyword: 'giá đỡ màn hình gaming' },
+    ],
+    beauty_female: [
+      { name: 'Son kem lì Romand Zero Velvet Tint trendy 3.5g', emoji: '💄', category: 'Son môi', price: 155000, reason: 'Màu sắc trendy tôn da, chất son mịn bám lâu cả ngày.', searchKeyword: 'son kem lì romand' },
+      { name: 'Máy rửa mặt sóng âm silicon 5 chế độ rung', emoji: '🧼', category: 'Thiết bị làm đẹp', price: 245000, reason: 'Làm sạch sâu lỗ chân lông, skincare hiệu quả hơn 6x.', searchKeyword: 'máy rửa mặt sóng âm silicon' },
+      { name: 'Gương trang điểm đèn LED cảm ứng chống lóa', emoji: '🪞', category: 'Dụng cụ', price: 180000, reason: 'Ánh sáng chuẩn studio giúp makeup đẹp hơn mọi lúc.', searchKeyword: 'gương trang điểm đèn led' },
+      { name: 'Set serum vitamin C dưỡng trắng da ban ngày', emoji: '✨', category: 'Skincare', price: 210000, reason: 'Mờ thâm sạm, tăng độ căng bóng cho làn da rạng rỡ.', searchKeyword: 'serum vitamin c dưỡng trắng' },
+      { name: 'Bộ cọ trang điểm 13 món lông mềm cao cấp', emoji: '🖌️', category: 'Dụng cụ', price: 125000, reason: 'Đủ bộ cọ cơ bản cho makeup tự nhiên đến sắc sảo.', searchKeyword: 'bộ cọ trang điểm 13 món' },
+      { name: 'Nước hoa chiết La Vie Est Belle Lancôme 10ml', emoji: '🌸', category: 'Nước hoa', price: 180000, reason: 'Hương hoa ngọt ngào lãng mạn, lưu hương cả ngày dài.', searchKeyword: 'nước hoa chiết nữ ngọt' },
+      { name: 'Mặt nạ ngủ collagen COSRX không cần rửa', emoji: '🌙', category: 'Skincare', price: 160000, reason: 'Dưỡng ẩm cấp tốc qua đêm, thức dậy da căng mịn tức thì.', searchKeyword: 'mặt nạ ngủ collagen cosrx' },
+      { name: 'Lắc tay bạc ý S925 đính đá pha lê lấp lánh', emoji: '💫', category: 'Trang sức', price: 280000, reason: 'Tinh tế thanh lịch, tôn vẻ nữ tính của cổ tay.', searchKeyword: 'lắc tay bạc s925 đính đá' },
+      { name: 'Bộ skincare mini Innisfree Jeju Green Tea 3 món', emoji: '🍵', category: 'Skincare', price: 250000, reason: 'Combo skincare chuẩn Hàn đủ dưỡng ẩm, toner, serum.', searchKeyword: 'bộ skincare innisfree mini' },
+    ],
+    beauty_male: [
+      { name: 'Sáp vuốt tóc Clay Pomade giữ nếp tự nhiên bóng nhẹ', emoji: '🧴', category: 'Chăm sóc tóc', price: 185000, reason: 'Giữ kiểu tóc phong độ cả ngày mà không bết dính.', searchKeyword: 'sáp vuốt tóc clay pomade' },
+      { name: 'Kem dưỡng da mặt nam chống nắng SPF 50 Belo', emoji: '🧴', category: 'Skincare nam', price: 145000, reason: 'Bảo vệ da khỏi UV, kiểm soát dầu tốt cho da nam.', searchKeyword: 'kem dưỡng da mặt nam spf50' },
+      { name: 'Ví da thật nam slim compact chống RFID', emoji: '👛', category: 'Phụ kiện', price: 280000, reason: 'Thiết kế mỏng gọn bảo vệ thẻ từ hiện đại.', searchKeyword: 'ví da nam slim rfid' },
+      { name: 'Nước hoa chiết Sauvage Dior 10ml nam tính', emoji: '🧪', category: 'Nước hoa', price: 240000, reason: 'Hương gỗ mạnh mẽ nam tính, lưu hương cực lâu.', searchKeyword: 'nước hoa chiết sauvage dior' },
+      { name: 'Kính mát UV400 gọng kim loại mỏng thời trang', emoji: '🕶️', category: 'Phụ kiện', price: 175000, reason: 'Bảo vệ mắt chuẩn + điểm nhấn thời trang không thể thiếu.', searchKeyword: 'kính mát uv400 gọng kim loại' },
+      { name: 'Thắt lưng da khóa tự động không đục lỗ', emoji: '🎗️', category: 'Phụ kiện', price: 295000, reason: 'Phụ kiện chỉn chu tạo tổng thể trang phục bảnh bao.', searchKeyword: 'thắt lưng da khóa tự động nam' },
+      { name: 'Set chăm sóc râu Gillette gel + dao cạo cao cấp', emoji: '🪒', category: 'Chăm sóc', price: 195000, reason: 'Cạo râu êm mịn không đứt da, bộ quà tặng tinh tế cho nam.', searchKeyword: 'bộ cạo râu gillette cao cấp' },
+      { name: 'Túi đeo chéo canvas nam streetwear gọn nhẹ', emoji: '🎒', category: 'Thời trang', price: 165000, reason: 'Đựng essentials gọn gàng theo phong cách urban nam tính.', searchKeyword: 'túi đeo chéo canvas nam' },
+    ],
+    reading: [
+      { name: 'Đèn đọc sách kẹp trang LED 3 chế độ sáng', emoji: '💡', category: 'Phụ kiện đọc sách', price: 79000, reason: 'Đọc sách ban đêm không mỏi mắt, không làm phiền người ngủ cùng.', searchKeyword: 'đèn đọc sách kẹp trang led' },
+      { name: 'Sách Atomic Habits – James Clear bản mới nhất', emoji: '📚', category: 'Sách bestseller', price: 125000, reason: 'Cuốn sách triệu bản thay đổi thói quen và cải thiện cuộc sống.', searchKeyword: 'sách atomic habits tiếng việt' },
+      { name: 'Sổ tay Bullet Journal bìa cứng chấm bi A5', emoji: '📓', category: 'Văn phòng phẩm', price: 95000, reason: 'Công cụ lập kế hoạch và ghi chú sáng tạo yêu thích của Gen Z.', searchKeyword: 'sổ tay bullet journal a5' },
+      { name: 'Kệ sách mini gỗ để bàn làm việc trang trí', emoji: '🪵', category: 'Trang trí', price: 135000, reason: 'Sắp xếp sách gọn gàng và decor bàn làm việc cực aesthetic.', searchKeyword: 'kệ sách mini gỗ để bàn' },
+      { name: 'Bộ bookmark gỗ khắc laser hình nghệ thuật 5 chiếc', emoji: '🔖', category: 'Lưu niệm', price: 65000, reason: 'Đánh dấu trang tinh tế và handmade, làm quà cực có tâm.', searchKeyword: 'bookmark gỗ khắc laser' },
+      { name: 'Sách Tư Duy Phản Biện – Nguyen Minh Duc', emoji: '📖', category: 'Sách', price: 110000, reason: 'Rèn luyện tư duy logic và phân tích vấn đề đa chiều.', searchKeyword: 'sách tư duy phản biện' },
+      { name: 'Gối tựa lưng đọc sách cao su non nhớ hình', emoji: '🛋️', category: 'Sức khỏe', price: 225000, reason: 'Hỗ trợ cột sống, ngồi đọc sách thoải mái nhiều giờ.', searchKeyword: 'gối tựa lưng đọc sách' },
+      { name: 'Bút ký kim loại cao cấp kèm hộp quà sang trọng', emoji: '✒️', category: 'Văn phòng phẩm', price: 195000, reason: 'Món quà trang nhã, ý nghĩa cho người thích viết lách.', searchKeyword: 'bút ký kim loại hộp quà' },
+    ],
+    travel: [
+      { name: 'Balo du lịch chống nước 30L nhiều ngăn tiện dụng', emoji: '🎒', category: 'Du lịch', price: 425000, reason: 'Chứa đồ khoa học, chống nước tốt cho mọi chuyến phượt.', searchKeyword: 'balo du lịch chống nước 30l' },
+      { name: 'Gối kê cổ du lịch cao su non ký ức 3D', emoji: '✈️', category: 'Du lịch', price: 165000, reason: 'Nâng đỡ cổ hoàn hảo, ngủ ngon suốt chuyến đi dài.', searchKeyword: 'gối kê cổ du lịch cao su' },
+      { name: 'Túi đeo bụng thể thao chống nước nhiều ngăn', emoji: '🏃', category: 'Thể thao', price: 99000, reason: 'Gọn nhẹ đựng đồ thiết yếu khi chạy bộ, leo núi, phượt.', searchKeyword: 'túi đeo bụng chống nước thể thao' },
+      { name: 'Bình nước thể thao inox 1L có ống hút nắp bật', emoji: '🥤', category: 'Đồ dùng', price: 185000, reason: 'Cung cấp đủ nước nguyên chuyến, inox an toàn sức khỏe.', searchKeyword: 'bình nước thể thao inox 1l' },
+      { name: 'Loa Bluetooth chống nước IPX7 cho dã ngoại', emoji: '🔊', category: 'Công nghệ', price: 350000, reason: 'Khuấy động mọi buổi picnic với âm thanh to, bass mạnh.', searchKeyword: 'loa bluetooth chống nước ipx7' },
+      { name: 'Quạt cầm tay sạc USB siêu mát 3 cấp độ gió', emoji: '🪭', category: 'Đồ dùng', price: 125000, reason: 'Xua tan nóng nực nhanh chóng, nhỏ gọn bỏ túi dễ dàng.', searchKeyword: 'quạt cầm tay sạc usb mini' },
+      { name: 'Túi du lịch gom cáp phụ kiện điện tử nhiều ngăn', emoji: '🗂️', category: 'Du lịch', price: 155000, reason: 'Gom cáp sạc, pin dự phòng gọn gàng không bị rối.', searchKeyword: 'túi đựng phụ kiện điện tử du lịch' },
+      { name: 'Đồng hồ thể thao đo nhịp tim GPS Xiaomi Band', emoji: '⌚', category: 'Công nghệ', price: 890000, reason: 'Theo dõi sức khỏe, quãng đường, nhịp tim chính xác.', searchKeyword: 'vòng đeo tay thể thao xiaomi band' },
+    ],
+    cooking: [
+      { name: 'Thớt gỗ Teak cao cấp decor món ăn sang trọng', emoji: '🪵', category: 'Đồ bếp', price: 210000, reason: 'Vừa dùng thái vừa bày biện phong cách cho những buổi nấu nướng.', searchKeyword: 'thớt gỗ teak cao cấp' },
+      { name: 'Set trà hoa thảo mộc mix 8 loại ngủ ngon an thần', emoji: '🍵', category: 'Sức khỏe', price: 165000, reason: 'Thư giãn tinh thần, dễ ngủ sâu sau ngày dài bận rộn.', searchKeyword: 'trà hoa thảo mộc mix ngủ ngon' },
+      { name: 'Máy đánh trứng tạo bọt cầm tay tốc độ cao', emoji: '🥚', category: 'Đồ bếp', price: 125000, reason: 'Làm bánh, pha cafe bọt nhanh gọn chỉ trong 30 giây.', searchKeyword: 'máy đánh trứng cầm tay mini' },
+      { name: 'Bộ gia vị khô hữu cơ 6 loại hộp gỗ sang trọng', emoji: '🧂', category: 'Ẩm thực', price: 195000, reason: 'Quà tặng có tâm cho người yêu bếp, nấu ngon hơn mỗi ngày.', searchKeyword: 'bộ gia vị hữu cơ hộp gỗ' },
+      { name: 'Nồi lẩu mini điện 1.2L dùng cho 1-2 người', emoji: '🍲', category: 'Đồ bếp', price: 285000, reason: 'Ăn lẩu tại nhà tiện lợi, tiết kiệm và ấm cúng hơn nhiều.', searchKeyword: 'nồi lẩu điện mini 1.2l' },
+      { name: 'Cốc thủy tinh 2 lớp borosilicate 350ml chịu nhiệt', emoji: '🥛', category: 'Đồ dùng', price: 92000, reason: 'Đựng trà nóng hay cà phê đá đều đẹp, cầm không nóng tay.', searchKeyword: 'cốc thủy tinh 2 lớp borosilicate' },
+      { name: 'Tạp dề canvas dày chống nước phong cách nhà hàng', emoji: '🎽', category: 'Đồ bếp', price: 118000, reason: 'Nấu ăn không lo vấy bẩn quần áo, trông cực chuyên nghiệp.', searchKeyword: 'tạp dề canvas chống nước bếp' },
+      { name: 'Bộ dao nhà bếp inox không gỉ 5 món bọc gỗ', emoji: '🔪', category: 'Đồ bếp', price: 350000, reason: 'Bộ dao đủ dùng cho mọi công đoạn nấu ăn hàng ngày.', searchKeyword: 'bộ dao nhà bếp inox 5 món' },
+    ],
+    general_female: [
+      { name: 'Nến thơm tinh dầu thiên nhiên handmade hộp gỗ', emoji: '🕯️', category: 'Trang trí', price: 145000, reason: 'Thư giãn đầu óc, tạo không gian ấm áp dễ chịu.', searchKeyword: 'nến thơm tinh dầu thiên nhiên' },
+      { name: 'Bình giữ nhiệt Stanley Quencher 591ml giữ lạnh 24h', emoji: '🥤', category: 'Đồ dùng', price: 580000, reason: 'Siêu hot TikTok, giữ lạnh cực tốt - item must-have 2024.', searchKeyword: 'bình giữ nhiệt stanley quencher' },
+      { name: 'Chậu cây sen đá mini set 3 chậu để bàn', emoji: '🪴', category: 'Cây cảnh', price: 85000, reason: 'Mang sắc xanh tươi mát đến phòng, dễ chăm không cần tưới nhiều.', searchKeyword: 'chậu cây sen đá mini set 3' },
+      { name: 'Túi tote canvas in họa tiết hoa vintage', emoji: '👜', category: 'Thời trang', price: 125000, reason: 'Phong cách vintage trendy, đi học đi chơi đều hợp.', searchKeyword: 'túi tote canvas hoa vintage' },
+      { name: 'Set thiệp handmade kèm hoa khô decor cực xinh', emoji: '💐', category: 'Lưu niệm', price: 55000, reason: 'Món quà nhỏ nhắn nhưng rất có tâm và ý nghĩa.', searchKeyword: 'thiệp handmade hoa khô' },
+      { name: 'Đèn ngủ silicon đổi màu cảm ứng chạm tay', emoji: '🌙', category: 'Trang trí', price: 165000, reason: 'Ánh sáng ấm dịu tạo giấc ngủ ngon và decor phòng cực chill.', searchKeyword: 'đèn ngủ silicon đổi màu cảm ứng' },
+      { name: 'Vòng tay đá thạch anh hồng phong thủy may mắn', emoji: '💎', category: 'Trang sức', price: 95000, reason: 'Mang ý nghĩa tình yêu và may mắn cho người đeo.', searchKeyword: 'vòng tay đá thạch anh hồng' },
+      { name: 'Sổ tay Planner 2025 thiết kế tối giản aesthetic', emoji: '📅', category: 'Văn phòng phẩm', price: 95000, reason: 'Lập kế hoạch mỗi ngày cực hiệu quả, thiết kế đẹp mắt.', searchKeyword: 'sổ tay planner 2025 aesthetic' },
+    ],
+    general_male: [
+      { name: 'Bình giữ nhiệt Lock&Lock Inox 304 450ml bền bỉ', emoji: '🥤', category: 'Đồ dùng', price: 265000, reason: 'Giữ nhiệt tốt, bền bỉ cho người bận rộn mỗi ngày.', searchKeyword: 'bình giữ nhiệt lock lock inox' },
+      { name: 'Đế sạc không dây Magsafe 3 trong 1 cao cấp', emoji: '⚡', category: 'Công nghệ', price: 280000, reason: 'Sạc đồng thời điện thoại, tai nghe, đồng hồ tiện lợi.', searchKeyword: 'đế sạc không dây 3 trong 1' },
+      { name: 'Cáp sạc Lightning/USB-C bọc dù siêu bền 1.2m', emoji: '🔌', category: 'Công nghệ', price: 75000, reason: 'Bền gấp 3 cáp thường, sạc nhanh, đa năng.', searchKeyword: 'cáp sạc bọc dù siêu bền' },
+      { name: 'Túi đeo chéo mini vải dù chống nước tiện dụng', emoji: '🎒', category: 'Thời trang', price: 155000, reason: 'Gọn nhẹ đựng đồ thiết yếu khi ra đường năng động.', searchKeyword: 'túi đeo chéo vải dù chống nước nam' },
+      { name: 'Cốc cafe thủy tinh giữ nhiệt 400ml có nắp hút', emoji: '☕', category: 'Đồ dùng', price: 115000, reason: 'Uống cafe đi làm tiện lợi, không lo rò rỉ hay nguội sớm.', searchKeyword: 'cốc thủy tinh giữ nhiệt có nắp' },
+      { name: 'Bộ tất co giãn 5 đôi chất cotton kháng khuẩn', emoji: '🧦', category: 'Thời trang', price: 85000, reason: 'Quà tặng thiết thực hàng ngày, không bao giờ thừa.', searchKeyword: 'tất cotton kháng khuẩn bộ 5 đôi' },
+      { name: 'Pin dự phòng 20000mAh sạc nhanh 65W gọn nhẹ', emoji: '🔋', category: 'Công nghệ', price: 380000, reason: 'Luôn đủ pin cho mọi thiết bị suốt ngày bận rộn.', searchKeyword: 'pin dự phòng 20000mah sạc nhanh' },
+      { name: 'Khăn tắm cotton cao cấp 70x140cm mềm mại', emoji: '🛁', category: 'Gia dụng', price: 125000, reason: 'Mềm mại thấm hút tốt, nâng tầm trải nghiệm phòng tắm.', searchKeyword: 'khăn tắm cotton cao cấp 70x140' },
+    ],
   };
 
-  // Build final suggestion items
-  return rawGifts.map((gift, index) => {
-    // Format price range around the base price
-    const minPrice = Math.floor(gift.price * 0.9);
-    const maxPrice = Math.floor(gift.price * 1.15);
-    const priceStr = `${minPrice.toLocaleString('vi-VN')}đ - ${maxPrice.toLocaleString('vi-VN')}đ`;
+  // --- Smart multi-factor selection logic ---
+  let selectedCategories: string[] = [];
 
-    return {
-      id: `mock_${index + 1}`,
-      productName: gift.name,
-      reason: getCustomReason(gift),
-      estimatedPriceRange: priceStr,
-      searchKeyword: gift.name.split(' - ')[0], // short keyword for search
-      emoji: gift.emoji,
-      category: gift.category,
-    };
+  // Primary: interest-based
+  if (hasInterest('gaming', 'game', 'công nghệ', 'tech')) {
+    selectedCategories.push('gaming');
+  }
+  if (hasInterest('làm đẹp', 'mỹ phẩm', 'thời trang', 'skincare')) {
+    selectedCategories.push(isMale ? 'beauty_male' : 'beauty_female');
+  }
+  if (hasInterest('đọc sách', 'sách', 'học')) {
+    selectedCategories.push('reading');
+  }
+  if (hasInterest('du lịch', 'thể thao', 'phượt', 'gym')) {
+    selectedCategories.push('travel');
+  }
+  if (hasInterest('nấu ăn', 'ẩm thực', 'cafe')) {
+    selectedCategories.push('cooking');
+  }
+
+  // Personality-based additions
+  if (hasPersonality('sáng tạo', 'nghệ thuật') && !selectedCategories.includes('reading')) {
+    selectedCategories.push('reading');
+  }
+  if (hasPersonality('năng động', 'thể thao') && !selectedCategories.includes('travel')) {
+    selectedCategories.push('travel');
+  }
+
+  // Default fallback by gender
+  if (selectedCategories.length === 0) {
+    selectedCategories.push(isMale ? 'general_male' : 'general_female');
+  }
+
+  // Always add general gender gifts as secondary options
+  const generalCat = isMale ? 'general_male' : 'general_female';
+  if (!selectedCategories.includes(generalCat)) {
+    selectedCategories.push(generalCat);
+  }
+
+  // Build candidate pool from selected categories
+  let candidatePool: RawGift[] = [];
+  for (const cat of selectedCategories) {
+    const catGifts = giftPool[cat] || [];
+    candidatePool.push(...catGifts);
+  }
+
+  // Remove duplicates by name
+  const seen = new Set<string>();
+  candidatePool = candidatePool.filter((g) => {
+    if (seen.has(g.name)) return false;
+    seen.add(g.name);
+    return true;
   });
+
+  // Filter by budget (allow ±30% flexibility for variety)
+  const budgetFiltered = candidatePool.filter(
+    (g) => g.price >= budgetMin * 0.3 && g.price <= budgetMax * 1.3
+  );
+  const finalPool = budgetFiltered.length >= 6 ? budgetFiltered : candidatePool;
+
+  // Score each gift by relevance
+  const scoredPool = finalPool.map((g) => {
+    let score = 0;
+    // Budget match bonus
+    if (g.price >= budgetMin && g.price <= budgetMax) score += 3;
+    // Primary category bonus
+    if (selectedCategories[0] && (giftPool[selectedCategories[0]] || []).some((x) => x.name === g.name)) score += 2;
+    return { gift: g, score };
+  });
+
+  scoredPool.sort((a, b) => b.score - a.score);
+  const top = scoredPool.slice(0, 9).map((s) => s.gift);
+
+  // Fill to 9 if needed
+  while (top.length < 9 && candidatePool.length > top.length) {
+    const extra = candidatePool.find((g) => !top.includes(g));
+    if (extra) top.push(extra);
+    else break;
+  }
+
+  // Build reason based on relationship
+  const getRelationshipReason = (gift: RawGift): string => {
+    const base = gift.reason;
+    if (rel === 'người yêu') {
+      return `${base} Món quà ngọt ngào thay lời muốn nói gửi đến người thương của bạn! 💕`;
+    } else if (rel.includes('bố') || rel.includes('mẹ')) {
+      return `${base} Thể hiện lòng hiếu kính và sự quan tâm ấm áp của bạn đến bố/mẹ.`;
+    } else if (rel.includes('bạn thân') || rel.includes('bạn bè')) {
+      return `${base} Chắc chắn đứa bạn thân sẽ thích mê và khoe ngay khi mở ra!`;
+    } else if (rel.includes('sếp') || rel.includes('đồng nghiệp')) {
+      return `${base} Lựa chọn chỉn chu, lịch sự gắn kết tình đồng nghiệp hữu hảo.`;
+    } else if (rel.includes('con')) {
+      return `${base} Món quà phù hợp lứa tuổi, kích thích sự sáng tạo và niềm vui cho bé.`;
+    }
+    return base;
+  };
+
+  // Format price range
+  const formatPrice = (price: number): string => {
+    const min = Math.floor(price * 0.88);
+    const max = Math.floor(price * 1.12);
+    return `${min.toLocaleString('vi-VN')}đ – ${max.toLocaleString('vi-VN')}đ`;
+  };
+
+  return top.map((gift, index) => ({
+    id: `smart_${index + 1}_${Date.now()}`,
+    productName: gift.name,
+    reason: getRelationshipReason(gift),
+    estimatedPriceRange: formatPrice(gift.price),
+    searchKeyword: gift.searchKeyword || gift.name.split(' – ')[0],
+    emoji: gift.emoji,
+    category: gift.category,
+  }));
 }
 
 function getMockSuggestions(answers: Partial<QuizAnswers>): GiftSuggestion[] {
-  // Ensure default answers if somehow incomplete
   const safeAnswers: QuizAnswers = {
     occasion: answers.occasion || 'Sinh nhật',
     relationship: answers.relationship || 'bạn thân',
@@ -185,15 +288,13 @@ function getMockSuggestions(answers: Partial<QuizAnswers>): GiftSuggestion[] {
     zodiac: answers.zodiac || '',
     personality: answers.personality || ['năng động'],
     interests: answers.interests || ['làm đẹp'],
-    budget: answers.budget || '100.000đ - 300.000đ',
+    budget: answers.budget || '100.000đ – 300.000đ',
   };
-
   return generateSmartMockSuggestions(safeAnswers);
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
 
@@ -206,7 +307,6 @@ export async function POST(request: NextRequest) {
 
     const answers: QuizAnswers = await request.json();
 
-    // Validate required fields
     if (!answers.occasion || !answers.relationship || !answers.gender) {
       return NextResponse.json(
         { error: 'Vui lòng hoàn thành tất cả các câu hỏi bắt buộc.' },
@@ -216,28 +316,17 @@ export async function POST(request: NextRequest) {
 
     let suggestions: GiftSuggestion[];
 
-    // Try real AI first, fall back to mock
     if (process.env.ANTHROPIC_API_KEY) {
       try {
         const { buildGiftPrompt, validateAIResponse } = await import('@/lib/ai/prompt-builder');
         const prompt = buildGiftPrompt(answers);
         const rawSuggestions = await callAnthropicAPI(prompt);
         suggestions = validateAIResponse({ suggestions: rawSuggestions });
-      } catch (aiError) {
-        console.warn('AI API failed, using mock data:', aiError);
-        // Retry once
-        try {
-          const { buildGiftPrompt, validateAIResponse } = await import('@/lib/ai/prompt-builder');
-          const prompt = buildGiftPrompt(answers);
-          const rawSuggestions = await callAnthropicAPI(prompt);
-          suggestions = validateAIResponse({ suggestions: rawSuggestions });
-        } catch {
-          suggestions = getMockSuggestions(answers);
-        }
+      } catch {
+        await new Promise((r) => setTimeout(r, 1000));
+        suggestions = getMockSuggestions(answers);
       }
     } else {
-      // No API key → use realistic mock data
-      // Simulate AI delay for realistic UX
       await new Promise((r) => setTimeout(r, 1500));
       suggestions = getMockSuggestions(answers);
     }

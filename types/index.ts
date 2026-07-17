@@ -35,19 +35,20 @@ export interface Product {
 }
 
 export interface Store {
-  placeId: string;
+  id: string;
   name: string;
   address: string;
   distanceMeters: number;
   rating: number;
   reviewCount: number;
   openNow: boolean;
-  openHours?: string;
+  hours?: string;
   lat: number;
   lng: number;
-  photoUrl?: string;
-  phoneNumber?: string;
-  types: string[];
+  phone?: string;
+  category?: string;
+  priceLevel?: string;
+  features?: string[];
 }
 
 export interface AIResponse {

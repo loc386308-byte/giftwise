@@ -630,35 +630,20 @@ function getCategoryFromKeyword(keyword: string): keyof typeof MOCK_CATEGORIES {
 }
 
 async function callClaudeForProducts(keyword: string, apiKey: string): Promise<Product[]> {
-  const prompt = `Bạn là một trợ lý ảo tìm kiếm sản phẩm tại Việt Nam. Dựa trên từ khóa tìm kiếm: "${keyword}", hãy tạo danh sách 6 sản phẩm THẬT và RẤT PHỔ BIẾN đang được bán trên Shopee hoặc TikTok Shop tại Việt Nam.
+  const prompt = `Bạn là trợ lý tìm sản phẩm Việt Nam. Từ khóa: "${keyword}".
+Tạo danh sách 6 sản phẩm ĐANG BÁN THẬT trên Shopee / TikTok Shop, ưu tiên:
+1. Giá THẤP NHẤT so với cùng mặt hàng – ưu tiên hàng giảm giá nhiều
+2. Đánh giá CỰC CAO (rating ≥ 4.8, ưu tiên 4.9 – 5.0)
+3. Lượt bán NHIỀU (sold ≥ 1000)
+4. Tên sản phẩm ĐẦY ĐỦ, THẬT, có thương hiệu hoặc model rõ ràng
+5. price và originalPrice là số nguyên VNĐ, KHÔNG có ký tự khác
+6. imageUrl: link Unsplash hợp chủ đề, đảm bảo hoạt động
+7. affiliateLink: link search thật trên Shopee (https://shopee.vn/search?keyword=...) hoặc TikTok
 
-Yêu cầu cực kỳ quan trọng:
-- Sản phẩm phải khớp chính xác với từ khóa "${keyword}".
-- Tên sản phẩm phải thật, đầy đủ, chi tiết (ví dụ: nếu từ khóa là nến thơm, hãy ghi rõ thương hiệu hoặc loại nến thật như "Nến thơm Yankee Candle", "Nến thơm hoa khô thơm phòng").
-- Giá tiền (trường price và originalPrice) là số nguyên dương tính bằng VNĐ (Ví dụ: 150000, 280000), KHÔNG có chữ đ hay dấu chấm phân cách.
-- rating từ 4.5 đến 5.0
-- reviewCount từ 100 đến 5000
-- sold từ 500 đến 10000
-- source là 'shopee' hoặc 'tiktok'
-- imageUrl: Sử dụng link ảnh Unsplash chất lượng cao và HỢP CHỦ ĐỀ nhất có thể (Sách dùng ảnh sách, son dùng ảnh son, đèn dùng ảnh đèn). Đảm bảo link ảnh hoạt động tốt.
-
-Trả kết quả CHỈ ở dạng JSON duy nhất, không giải thích hay thêm text nào khác ngoài JSON, theo format:
+Traả về CHỈ JSON:
 {
   "products": [
-    {
-      "id": "chuỗi ngẫu nhiên",
-      "name": "tên sản phẩm thật",
-      "price": 150000,
-      "originalPrice": 180000,
-      "imageUrl": "https://images.unsplash.com/...",
-      "rating": 4.8,
-      "reviewCount": 120,
-      "sold": 450,
-      "source": "shopee hoặc tiktok",
-      "affiliateLink": "link tìm kiếm thật trên sàn (ví dụ: https://shopee.vn/search?keyword=... hoặc https://tiktok.com/)",
-      "discount": 16,
-      "badge": "nếu có (ví dụ: Bán chạy, Giá tốt)"
-    }
+    { "id": "p1", "name": "...", "price": 150000, "originalPrice": 220000, "imageUrl": "https://images.unsplash.com/...", "rating": 4.9, "reviewCount": 3200, "sold": 8500, "source": "shopee", "affiliateLink": "https://shopee.vn/search?keyword=...", "discount": 32, "badge": "Bán chạy" }
   ]
 }`;
 
@@ -703,11 +688,10 @@ export async function GET(request: NextRequest) {
 
     // 2. Fallback to Smart Mock Generator
     if (products.length === 0) {
-      await new Promise((r) => setTimeout(r, 600)); // Simulating search delay
+      await new Promise((r) => setTimeout(r, 600));
       const category = getCategoryFromKeyword(keyword);
       const matchedMocks = MOCK_CATEGORIES[category] || MOCK_CATEGORIES.candle;
 
-      // Build affiliate link using the exact gift keyword
       const shopeeSearchUrl = `https://shopee.vn/search?keyword=${encodeURIComponent(keyword)}`;
 
       products = matchedMocks.map((item, index) => ({
@@ -720,11 +704,35 @@ export async function GET(request: NextRequest) {
         reviewCount: item.reviewCount,
         sold: item.sold,
         source: item.source as 'shopee' | 'tiktok',
-        // Override affiliate link: Shopee products link to exact keyword search, TikTok to homepage
         affiliateLink: item.source === 'shopee' ? shopeeSearchUrl : 'https://www.tiktok.com/search?q=' + encodeURIComponent(keyword),
         discount: item.discount,
-        badge: index === 0 ? 'Giá tốt nhất' : item.badge,
+        badge: item.badge,
       }));
+    }
+
+    // ── Sort: 5-star first (rating DESC), then cheapest (price ASC) ──
+    products.sort((a, b) => {
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      return a.price - b.price;
+    });
+
+    // ── Assign smart badges ──
+    if (products.length > 0) {
+      // Highest rated
+      const topRated = products.reduce((best, p) => (p.rating > best.rating ? p : best), products[0]);
+      if (topRated.rating >= 4.9) topRated.badge = '⭐ Đánh giá 5 sao';
+
+      // Cheapest (among same-category shopee items)
+      const shopeeItems = products.filter((p) => p.source === 'shopee');
+      if (shopeeItems.length > 0) {
+        const cheapest = shopeeItems.reduce((min, p) => (p.price < min.price ? p : min), shopeeItems[0]);
+        if (!cheapest.badge || cheapest.badge === '') cheapest.badge = '💸 Giá rẻ nhất';
+        else cheapest.badge = '💸 Rẻ nhất · ' + cheapest.badge;
+      }
+
+      // Top seller
+      const topSeller = products.reduce((best, p) => (p.sold > best.sold ? p : best), products[0]);
+      if (!topSeller.badge) topSeller.badge = '🔥 Bán chạy nhất';
     }
 
     return NextResponse.json({
