@@ -32,6 +32,8 @@ export interface Product {
   affiliateLink: string;
   discount?: number;
   badge?: string;
+  sizes?: string[];       // e.g. ['XS','S','M','L','XL'] or ['37','38','39','40']
+  sizeGuide?: string;     // e.g. 'Xem bảng size chi tiết'
 }
 
 export interface Store {

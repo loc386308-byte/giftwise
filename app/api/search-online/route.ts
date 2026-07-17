@@ -2,663 +2,462 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Product } from '@/types';
 
 // ============================================================
-// SMART FALLBACK GENERATOR BY CATEGORY
+// PREMIUM PRODUCT CATALOGUE – beautiful images, sizes, new categories
 // ============================================================
-const MOCK_CATEGORIES = {
+const MOCK_CATEGORIES: Record<string, Omit<Product, 'id'>[]> = {
+
   book: [
     {
-      name: 'Sách Atomic Habits - Thay Đổi Tí Hon Hiệu Quả Phi Thường',
-      price: 139000,
-      originalPrice: 189000,
-      imageUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 3840,
-      sold: 12500,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=atomic%20habits',
-      discount: 26,
-      badge: 'Bán chạy nhất',
+      name: 'Sách Atomic Habits – Thay Đổi Tí Hon Hiệu Quả Phi Thường (Bìa Cứng Mạ Vàng)',
+      price: 139000, originalPrice: 189000,
+      imageUrl: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 8240, sold: 42500, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=atomic+habits+bìa+cứng+mạ+vàng', discount: 26, badge: '📚 Bestseller',
     },
     {
-      name: 'Sách Đắc Nhân Tâm (Bìa Cứng Khổ Lớn)',
-      price: 95000,
-      originalPrice: 130000,
-      imageUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 2901,
-      sold: 9400,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=đắc%20nhân%20tâm',
-      discount: 26,
+      name: 'Sách Đắc Nhân Tâm – Dale Carnegie (Bìa Đặc Biệt)',
+      price: 95000, originalPrice: 130000,
+      imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 5210, sold: 19400, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=đắc+nhân+tâm+bìa+đặc+biệt', discount: 27,
     },
     {
-      name: 'Combo 2 Cuốn Sách Tư Duy Ngược & Tư Duy Mở',
-      price: 155000,
-      originalPrice: 220000,
-      imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 1420,
-      sold: 4800,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 29,
-      badge: 'Xu hướng',
+      name: 'Sổ Tay Leuchtturm1917 A5 Dotted – Bullet Journal Cao Cấp',
+      price: 390000, originalPrice: 490000,
+      imageUrl: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 1420, sold: 4800, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=leuchtturm1917+a5+dotted', discount: 20, badge: '✒️ Premium',
+    },
+    {
+      name: 'Kindle Paperwhite 11th Gen 8GB – Màn E-Ink Không Chói Mắt',
+      price: 3490000, originalPrice: 4200000,
+      imageUrl: 'https://images.unsplash.com/photo-1491841651911-c44484e80cd8?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 6800, sold: 22000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=kindle+paperwhite+11th+chính+hãng', discount: 17, badge: '⭐ Đánh giá 5 sao',
     },
   ],
+
   beauty: [
     {
-      name: 'Son Kem Lì Romand Juicy Lasting Tint - Màu 23 Nucadamia',
-      price: 149000,
-      originalPrice: 210000,
-      imageUrl: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 8940,
-      sold: 42000,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=romand%20juicy',
-      discount: 29,
-      badge: 'Yêu thích',
+      name: 'Son Kem Lì Romand Zero Velvet Tint – #25 Mauve Beach',
+      price: 149000, originalPrice: 210000,
+      imageUrl: 'https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 18940, sold: 82000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=romand+zero+velvet+tint+25', discount: 29, badge: '💄 Yêu thích',
     },
     {
-      name: 'Tẩy Trang L\'Oreal Paris 3-in-1 Micellar Water 400ml',
-      price: 179000,
-      originalPrice: 249000,
-      imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 12400,
-      sold: 67000,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=loreal%20micellar%20water',
-      discount: 28,
-      badge: 'Mall Chính hãng',
+      name: 'Kem Chống Nắng La Roche-Posay Anthelios SPF50+ 50ml',
+      price: 385000, originalPrice: 495000,
+      imageUrl: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 12400, sold: 51000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=la+roche+posay+anthelios+spf50', discount: 22, badge: '✅ Chính hãng',
     },
     {
-      name: 'Kem Chống Nắng La Roche-Posay Anthelios Oil Free 50ml',
-      price: 385000,
-      originalPrice: 495000,
-      imageUrl: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 5410,
-      sold: 21000,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 22,
+      name: 'Set Mặt Nạ Innisfree Jeju Volcanic Clay Mask 10 miếng',
+      price: 220000, originalPrice: 310000,
+      imageUrl: 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 7800, sold: 32000, source: 'tiktok',
+      affiliateLink: 'https://www.tiktok.com/search?q=innisfree+jeju+volcanic+mask', discount: 29, badge: '🔥 Viral TikTok',
+    },
+    {
+      name: 'Gương Trang Điểm LED Hollywood 18 Bóng 3 Chế Độ Sáng',
+      price: 340000, originalPrice: 480000,
+      imageUrl: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 4200, sold: 16000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=gương+trang+điểm+led+hollywood+18+bóng', discount: 29,
     },
   ],
+
   candle: [
     {
-      name: 'Nến Thơm Hoa Khô Thảo Mộc thiên nhiên thư giãn khử mùi',
-      price: 125000,
-      originalPrice: 180000,
-      imageUrl: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 1560,
-      sold: 6200,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=nến%20thơm%20hoa%20khô',
-      discount: 30,
-      badge: 'Bán chạy',
+      name: 'Nến Thơm Diptyque Baies 190g – Hương Quả Mọng & Hoa Hồng Paris',
+      price: 1890000, originalPrice: 2100000,
+      imageUrl: 'https://images.unsplash.com/photo-1607897232936-a0e3b29e0cae?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 890, sold: 2800, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=diptyque+baies+candle+190g', discount: 10, badge: '✨ Luxury',
     },
     {
-      name: 'Nến Thơm Yankee Candle size S - Hương Lavender tinh khiết',
-      price: 290000,
-      originalPrice: 350000,
-      imageUrl: 'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 890,
-      sold: 3400,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=yankee%20candle',
-      discount: 17,
-      badge: 'Chính hãng',
+      name: 'Nến Thơm Hoa Khô Handmade Hũ Thủy Tinh Trong 200g',
+      price: 145000, originalPrice: 199000,
+      imageUrl: 'https://images.unsplash.com/photo-1602910344008-22f323cc1817?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 3560, sold: 14200, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=nến+thơm+hoa+khô+thủy+tinh+handmade', discount: 27, badge: '🔥 Bán chạy',
     },
     {
-      name: 'Nến Thơm Decor Hũ Thủy Tinh Amber Co. tinh dầu thơm phòng',
-      price: 168000,
-      originalPrice: 220000,
-      imageUrl: 'https://images.unsplash.com/photo-1572726729207-a78d6eb16d7e?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 654,
-      sold: 1900,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 23,
+      name: 'Nến Thơm Yankee Candle Lavender Large Jar 623g – Lưu Hương 150h',
+      price: 890000, originalPrice: 1100000,
+      imageUrl: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 1200, sold: 4500, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=yankee+candle+large+jar+lavender', discount: 19, badge: '✅ Chính hãng',
+    },
+    {
+      name: 'Nước Hoa Chanel Chance Eau Tendre EDT 100ml – Hương Nhẹ Nhàng',
+      price: 3200000, originalPrice: 3800000,
+      imageUrl: 'https://images.unsplash.com/photo-1541643600914-78b084683702?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 2100, sold: 7400, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=chanel+chance+eau+tendre+100ml', discount: 16, badge: '🌸 Luxury',
     },
   ],
+
   tech: [
     {
-      name: 'Tai Nghe Chụp Tai Havit H630BT Không Dây Chống Ồn',
-      price: 289000,
-      originalPrice: 450000,
-      imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 4230,
-      sold: 15000,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=havit%20h630bt',
-      discount: 35,
-      badge: 'Giá cực tốt',
+      name: 'Tai Nghe Apple AirPods 3 Lightning Charging Case – Chính Hãng VN/A',
+      price: 2790000, originalPrice: 3490000,
+      imageUrl: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 12400, sold: 38000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=airpods+3+chính+hãng+VN', discount: 20, badge: '⭐ Top Pick',
     },
     {
-      name: 'Đèn LED RGB Cảm Biến Nháy Theo Nhạc decor góc gaming',
-      price: 85000,
-      originalPrice: 150000,
-      imageUrl: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 1890,
-      sold: 8400,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 43,
-      badge: 'Xu hướng',
+      name: 'Loa Bluetooth JBL Flip 6 Chống Nước IP67 – Bass Mạnh 12h Pin',
+      price: 1890000, originalPrice: 2490000,
+      imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 8900, sold: 26000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=jbl+flip+6+chính+hãng', discount: 24, badge: '✅ Chính hãng',
     },
     {
-      name: 'Loa Bluetooth Mini Baseus E09 Chống Nước âm trầm cực đỉnh',
-      price: 350000,
-      originalPrice: 450000,
-      imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 780,
-      sold: 2100,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=loa%20bluetooth%20baseus',
-      discount: 22,
+      name: 'Pin Dự Phòng Anker 737 PowerCore 26800mAh 140W – Sạc Nhanh MacBook',
+      price: 1290000, originalPrice: 1690000,
+      imageUrl: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 5600, sold: 18000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=anker+737+powercore+26800mah', discount: 24,
+    },
+    {
+      name: 'Đế Sạc Không Dây Anker 3-in-1 MagSafe 15W – Sạc Đồng Thời 3 Thiết Bị',
+      price: 890000, originalPrice: 1190000,
+      imageUrl: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 3200, sold: 9800, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=anker+wireless+charger+3in1+magsafe', discount: 25,
     },
   ],
+
   jewelry: [
     {
-      name: 'Lắc tay bạc S925 đính đá nhân tạo lấp lánh phong cách Hàn Quốc',
-      price: 199000,
-      originalPrice: 280000,
-      imageUrl: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 1520,
-      sold: 4500,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=lắc%20tay%20bạc%20đính%20đá',
-      discount: 28,
-      badge: 'Bán chạy',
+      name: 'Lắc Tay Bạc Thật S925 Đính Đá CZ Lấp Lánh – Phong Cách Hàn Quốc',
+      price: 199000, originalPrice: 280000,
+      imageUrl: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 5520, sold: 18400, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=lắc+tay+bạc+s925+đính+đá+cz', discount: 28, badge: '🔥 Bán chạy',
     },
     {
-      name: 'Dây chuyền bạc mặt cỏ 4 lá may mắn S925',
-      price: 245000,
-      originalPrice: 320000,
-      imageUrl: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 980,
-      sold: 3100,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 23,
-      badge: 'Yêu thích',
+      name: 'Dây Chuyền Vàng 18K Mặt Ngôi Sao Đính Kim Cương Nhân Tạo',
+      price: 1250000, originalPrice: 1680000,
+      imageUrl: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 980, sold: 3100, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=dây+chuyền+vàng+18k+đính+đá+cao+cấp', discount: 26, badge: '💎 Premium',
+    },
+    {
+      name: 'Nhẫn Bạc Thật S925 Đính Đá Hoa Tinh Xảo – Tặng Hộp Nhung Cao Cấp',
+      price: 245000, originalPrice: 340000,
+      imageUrl: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 1980, sold: 7200, source: 'tiktok',
+      affiliateLink: 'https://www.tiktok.com/search?q=nhẫn+bạc+s925+đính+đá+hoa', discount: 28,
     },
   ],
+
   fashion: [
     {
-      name: 'Túi tote canvas dày dặn có khóa kéo in hình xinh xắn',
-      price: 75000,
-      originalPrice: 110000,
-      imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 5420,
-      sold: 19000,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=túi%20tote%20canvas',
-      discount: 31,
+      name: 'Túi Tote Canvas Cao Cấp Unisex Local Brand – Pastel Đa Màu',
+      price: 185000, originalPrice: 260000,
+      imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 8420, sold: 32000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=túi+tote+canvas+local+brand+pastel',
+      discount: 29, sizes: ['One Size'],
     },
     {
-      name: 'Túi Đeo Chéo Nữ Mini Da PU mềm dáng cổ điển',
-      price: 220000,
-      originalPrice: 350000,
-      imageUrl: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 1120,
-      sold: 3400,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 37,
-      badge: 'Giá tốt',
+      name: 'Áo Khoác Dù Unisex 2 Lớp Chống Nước – Streetwear Local Brand',
+      price: 680000, originalPrice: 890000,
+      imageUrl: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 3200, sold: 11000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=áo+khoác+dù+unisex+chống+nước+local+brand',
+      discount: 24, badge: '🔥 Bán chạy', sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    },
+    {
+      name: 'Giày Sneaker Nữ Đế Dày Platform Retro – Màu Pastel Hot Trend',
+      price: 425000, originalPrice: 590000,
+      imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 5600, sold: 19000, source: 'tiktok',
+      affiliateLink: 'https://www.tiktok.com/search?q=giày+sneaker+platform+nữ+pastel',
+      discount: 28, sizes: ['35', '36', '37', '38', '39', '40'],
+    },
+    {
+      name: 'Túi Xách Đeo Chéo Da PU Nữ Mini Dáng Baguette Vintage – Nhiều Màu',
+      price: 320000, originalPrice: 450000,
+      imageUrl: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 2800, sold: 9500, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=túi+xách+da+pu+nữ+baguette+vintage',
+      discount: 29, badge: '🔥 Hot', sizes: ['One Size'],
     },
   ],
+
   bottle: [
     {
-      name: 'Bình giữ nhiệt Lock&Lock LHC4131BKR 450ml - Inox 304 chính hãng',
-      price: 265000,
-      originalPrice: 380000,
-      imageUrl: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 8900,
-      sold: 32000,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=lock%20and%20lock%20bình%20giữ%20nhiệt',
-      discount: 30,
-      badge: 'Chính hãng',
+      name: 'Bình Giữ Nhiệt Stanley Quencher H2.0 Flowstate 591ml – Soft Matte',
+      price: 1350000, originalPrice: 1790000,
+      imageUrl: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 8900, sold: 28000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=stanley+quencher+591ml+soft+matte', discount: 24, badge: '🔥 Viral TikTok',
     },
     {
-      name: 'Ly giữ nhiệt Stanley Quencher Tumbler 1.2L giữ lạnh 24h',
-      price: 680000,
-      originalPrice: 850000,
-      imageUrl: 'https://images.unsplash.com/photo-1567922045116-2a00fae2ed03?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 420,
-      sold: 1500,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 20,
+      name: 'Bình Giữ Nhiệt Lock&Lock Inox 304 LHC4131 450ml – Không BPA',
+      price: 265000, originalPrice: 380000,
+      imageUrl: 'https://images.unsplash.com/photo-1523362628745-0c100150b504?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 18900, sold: 72000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=lock+lock+lhc4131+inox+304', discount: 30, badge: '✅ Chính hãng',
     },
   ],
+
   gaming: [
     {
-      name: 'Bàn phím cơ không dây layout 75% RGB Keychron K2',
-      price: 1250000,
-      originalPrice: 1650000,
-      imageUrl: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 2340,
-      sold: 8900,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=bàn+phím+cơ+không+dây',
-      discount: 24,
-      badge: 'Top Gaming',
+      name: 'Bàn Phím Cơ Keychron K2 Pro Bluetooth/USB-C Hot-Swap RGB',
+      price: 2490000, originalPrice: 3200000,
+      imageUrl: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 4230, sold: 12900, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=keychron+k2+pro+bluetooth+hot+swap', discount: 22, badge: '🏆 Editor Choice',
     },
     {
-      name: 'Tai nghe gaming chụp tai Havit H2002D có mic LED',
-      price: 390000,
-      originalPrice: 550000,
-      imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 3120,
-      sold: 12400,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=tai+nghe+gaming',
-      discount: 29,
+      name: 'Tai Nghe Gaming SteelSeries Arctis Nova 3 – Surround 7.1',
+      price: 1290000, originalPrice: 1690000,
+      imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 2890, sold: 9400, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=steelseries+arctis+nova+3+chính+hãng', discount: 24,
     },
     {
-      name: 'Tay cầm chơi game không dây DualSense bluetooth đa nền tảng',
-      price: 780000,
-      originalPrice: 980000,
-      imageUrl: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 890,
-      sold: 3200,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 20,
+      name: 'Tay Cầm Xbox Wireless Controller – Glacier Blue Chính Hãng',
+      price: 1590000, originalPrice: 1990000,
+      imageUrl: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 1560, sold: 5800, source: 'tiktok',
+      affiliateLink: 'https://www.tiktok.com/search?q=xbox+wireless+controller+glacier+blue', discount: 20, badge: '✅ Chính hãng',
     },
     {
-      name: 'Lót chuột gaming cỡ XL 900x400mm chống trượt siêu dày',
-      price: 115000,
-      originalPrice: 180000,
-      imageUrl: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 6500,
-      sold: 24000,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=lót+chuột+gaming+xl',
-      discount: 36,
-      badge: 'Bán chạy',
+      name: 'Lót Chuột ASUS ROG Scabbard II Extended 900×400mm Chống Nước',
+      price: 890000, originalPrice: 1190000,
+      imageUrl: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 3400, sold: 11000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=asus+rog+scabbard+ii+extended', discount: 25,
     },
     {
-      name: 'Đèn LED RGB cảm biến âm thanh nháy theo nhạc gaming',
-      price: 95000,
-      originalPrice: 150000,
-      imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 2100,
-      sold: 8700,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 36,
-      badge: 'Xu hướng',
-    },
-    {
-      name: 'Ghế gaming ngồi học ngồi làm việc lưng cao có gối',
-      price: 1890000,
-      originalPrice: 2500000,
-      imageUrl: 'https://images.unsplash.com/photo-1598550476439-6847785fcea6?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 450,
-      sold: 1200,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=ghế+gaming',
-      discount: 24,
+      name: 'Đèn LED RGB Govee Immersion TV – Ambilight Sync Theo Màn Hình',
+      price: 450000, originalPrice: 650000,
+      imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 2100, sold: 8700, source: 'tiktok',
+      affiliateLink: 'https://www.tiktok.com/search?q=govee+immersion+tv+led+rgb', discount: 31, badge: '🔥 Xu hướng',
     },
   ],
+
   menFashion: [
     {
-      name: 'Sáp vuốt tóc Clay Pomade giữ nếp cứng tự nhiên bóng nhẹ',
-      price: 185000,
-      originalPrice: 250000,
-      imageUrl: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 3400,
-      sold: 15000,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=sáp+vuốt+tóc+clay+pomade',
-      discount: 26,
-      badge: 'Bán chạy',
+      name: 'Nước Hoa Dior Sauvage EDT 100ml – Hương Gỗ Nam Tính Lưu Hương 8h',
+      price: 3100000, originalPrice: 3800000,
+      imageUrl: 'https://images.unsplash.com/photo-1541643600914-78b084683702?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 4200, sold: 14500, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=dior+sauvage+edt+100ml+chính+hãng', discount: 18, badge: '🔥 Best Seller',
     },
     {
-      name: 'Ví da nam mini RFID chống từ tính cao cấp',
-      price: 265000,
-      originalPrice: 380000,
-      imageUrl: 'https://images.unsplash.com/photo-1627123424574-724758594913?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 890,
-      sold: 3200,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=ví+da+nam+mini',
-      discount: 30,
+      name: 'Sáp Vuốt Tóc LAYRITE Superhold Pomade 297g – Barbershop Pick',
+      price: 290000, originalPrice: 390000,
+      imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 7800, sold: 28000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=layrite+superhold+pomade+297g', discount: 26, badge: '✂️ Barbershop Pick',
     },
     {
-      name: 'Kính mát nam gọng kim loại chống UV400 tráng gương',
-      price: 175000,
-      originalPrice: 290000,
-      imageUrl: 'https://images.unsplash.com/photo-1508296695146-257a814070b4?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 1240,
-      sold: 4500,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 40,
+      name: 'Giày Adidas Stan Smith OG Vintage White/Green – Chính Hãng',
+      price: 2190000, originalPrice: 2800000,
+      imageUrl: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 3200, sold: 10500, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=adidas+stan+smith+chính+hãng',
+      discount: 22, sizes: ['38', '39', '40', '41', '42', '43', '44'],
     },
     {
-      name: 'Thắt lưng da nam khóa tự động không cần đục lỗ',
-      price: 295000,
-      originalPrice: 420000,
-      imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 560,
-      sold: 1900,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=thắt+lưng+da+khóa+tự+động',
-      discount: 30,
-    },
-    {
-      name: 'Túi đeo chéo nam canvas bạt dày phong cách đường phố',
-      price: 160000,
-      originalPrice: 240000,
-      imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a45?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 2300,
-      sold: 7800,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 33,
-    },
-    {
-      name: 'Nước hoa chiết Sauvage Dior chính hãng 10ml nam tính',
-      price: 240000,
-      originalPrice: 320000,
-      imageUrl: 'https://images.unsplash.com/photo-1541643600914-78b084683702?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 340,
-      sold: 1100,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=nước+hoa+chiết+nam',
-      discount: 25,
-      badge: 'Chính hãng',
+      name: 'Ví Da Thật Nam Full-Grain Leather Slim Bifold – RFID Blocking',
+      price: 680000, originalPrice: 890000,
+      imageUrl: 'https://images.unsplash.com/photo-1627123424574-724758594913?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 2100, sold: 7800, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=ví+da+thật+nam+full+grain+slim+rfid', discount: 24,
     },
   ],
+
   travel: [
     {
-      name: 'Balo du lịch chống nước dã ngoại đa ngăn 30L cao cấp',
-      price: 420000,
-      originalPrice: 590000,
-      imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a63?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 1560,
-      sold: 5800,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=balo+du+lịch+chống+nước',
-      discount: 29,
+      name: 'Bình Giữ Nhiệt Stanley Quencher 30oz Tumbler – Giữ Lạnh 4h Ice',
+      price: 1350000, originalPrice: 1790000,
+      imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 5400, sold: 21000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=stanley+quencher+30oz+tumbler', discount: 25, badge: '🔥 Viral',
     },
     {
-      name: 'Gối chữ U kê cổ du lịch cao su non êm ái',
-      price: 165000,
-      originalPrice: 220000,
-      imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 2300,
-      sold: 9200,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=gối+cổ+du+lịch',
-      discount: 25,
-      badge: 'Bán chạy',
+      name: 'Balo Du Lịch Thule Crossover 2 40L Chống Nước – Ngăn Laptop 15"',
+      price: 2900000, originalPrice: 3800000,
+      imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a63?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 890, sold: 2800, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=thule+crossover+2+40l+chính+hãng', discount: 24, badge: '💎 Premium',
     },
     {
-      name: 'Loa bluetooth chống nước IPX7 xách tay dã ngoại',
-      price: 350000,
-      originalPrice: 480000,
-      imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 780,
-      sold: 2400,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 27,
-    },
-    {
-      name: 'Quạt cầm tay mini sạc USB 3 tốc độ siêu mát nhỏ gọn',
-      price: 125000,
-      originalPrice: 180000,
-      imageUrl: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 5400,
-      sold: 22000,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=quạt+cầm+tay+mini+sạc',
-      discount: 31,
-    },
-    {
-      name: 'Túi đeo bụng thể thao chống nước chạy bộ tập gym',
-      price: 99000,
-      originalPrice: 150000,
-      imageUrl: 'https://images.unsplash.com/photo-1575311373937-040b8e1fd6b0?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 3200,
-      sold: 12800,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=túi+đeo+bụng+thể+thao',
-      discount: 34,
-    },
-    {
-      name: 'Bình nước thể thao inox 1L có ống hút nắp bật',
-      price: 185000,
-      originalPrice: 260000,
-      imageUrl: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 4100,
-      sold: 16000,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=bình+nước+thể+thao+inox',
-      discount: 29,
+      name: 'Giày Chạy Bộ Nike React Miler 3 – Đế React Siêu Êm',
+      price: 2590000, originalPrice: 3200000,
+      imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 2100, sold: 7400, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=nike+react+miler+3+running',
+      discount: 19, sizes: ['38', '39', '40', '41', '42', '43', '44'],
     },
   ],
+
   kitchen: [
     {
-      name: 'Thớt gỗ teak nguyên tấm cao cấp decor bếp sang trọng',
-      price: 210000,
-      originalPrice: 290000,
-      imageUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 890,
-      sold: 3100,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=thớt+gỗ+teak+cao+cấp',
-      discount: 28,
+      name: 'Nồi Chiên Không Dầu Philips HD9270 7L – Màn Hình Cảm Ứng Digital',
+      price: 2890000, originalPrice: 3900000,
+      imageUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 8900, sold: 34000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=philips+hd9270+nồi+chiên+không+dầu+7l', discount: 26, badge: '✅ Chính hãng',
     },
     {
-      name: 'Set trà hoa thảo mộc mix 8 loại an thần ngủ ngon',
-      price: 160000,
-      originalPrice: 220000,
-      imageUrl: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviewCount: 1240,
-      sold: 5600,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=trà+hoa+thảo+mộc',
-      discount: 27,
-      badge: 'Bán chạy',
+      name: 'Thớt Gỗ Acacia Cao Cấp Khắc Tên Miễn Phí – Decor Bếp Sang Trọng',
+      price: 380000, originalPrice: 520000,
+      imageUrl: 'https://images.unsplash.com/photo-1556909114-d5aaee697f95?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 3200, sold: 12500, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=thớt+gỗ+acacia+khắc+tên+cao+cấp', discount: 27, badge: '🎁 Cá nhân hóa',
     },
     {
-      name: 'Máy tạo bọt cafe mini cầm tay đánh trứng siêu nhanh',
-      price: 125000,
-      originalPrice: 180000,
-      imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 3400,
-      sold: 14000,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=máy+đánh+trứng+tạo+bọt',
-      discount: 31,
+      name: 'Set Trà Matcha Nhật Bản – Bột Matcha + Chén Sứ + Chổi Khuấy Cao Cấp',
+      price: 450000, originalPrice: 620000,
+      imageUrl: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 2100, sold: 8900, source: 'tiktok',
+      affiliateLink: 'https://www.tiktok.com/search?q=bộ+dụng+cụ+pha+matcha+nhật+bản+cao+cấp', discount: 27, badge: '🍵 Viral',
     },
     {
-      name: 'Bộ muỗng nĩa dao gỗ sồi nguyên tự nhiên không sơn',
-      price: 98000,
-      originalPrice: 145000,
-      imageUrl: 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 670,
-      sold: 2200,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=muỗng+nĩa+gỗ+sồi',
-      discount: 32,
+      name: 'Máy Tạo Bọt Cafe Mini Cầm Tay – Đánh Bông Sữa Dalgona Tại Nhà',
+      price: 125000, originalPrice: 180000,
+      imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 4200, sold: 18000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=máy+tạo+bọt+cafe+đánh+bông+sữa', discount: 31,
+    },
+  ],
+
+  // ── Experience / Voucher ──────────────────────────────────────────────────
+  experience: [
+    {
+      name: 'Voucher Spa & Massage Body Toàn Thân 90 Phút – Thư Giãn 5 Sao',
+      price: 450000, originalPrice: 800000,
+      imageUrl: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 2800, sold: 9400, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=voucher+spa+massage+body+90+phút+thư+giãn', discount: 44, badge: '💆 Giảm 44%',
     },
     {
-      name: 'Cốc thủy tinh 2 lớp borosilicate chịu nhiệt 350ml',
-      price: 90000,
-      originalPrice: 130000,
-      imageUrl: 'https://images.unsplash.com/photo-1544787219-7f47ccb76575?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviewCount: 2100,
-      sold: 9800,
-      source: 'tiktok',
-      affiliateLink: 'https://tiktok.com/',
-      discount: 31,
+      name: 'Combo Vé Xem Phim CGV + Bắp Rang + Nước Đôi Cho 2 Người',
+      price: 250000, originalPrice: 350000,
+      imageUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 6200, sold: 24000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=combo+vé+cgv+2+người+bắp+nước', discount: 29, badge: '🎬 Hot deal',
     },
     {
-      name: 'Tạp dề chống thấm canvas dày bếp nhà hàng phong cách',
-      price: 118000,
-      originalPrice: 165000,
-      imageUrl: 'https://images.unsplash.com/photo-1556909114-d5aaee697f95?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviewCount: 430,
-      sold: 1400,
-      source: 'shopee',
-      affiliateLink: 'https://shopee.vn/search?keyword=tạp+dề+canvas+bếp',
-      discount: 29,
+      name: 'Vé Concert / Sự Kiện Âm Nhạc Live 2025 – Hạng Standing Premium',
+      price: 890000, originalPrice: 1100000,
+      imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 3400, sold: 11000, source: 'tiktok',
+      affiliateLink: 'https://www.tiktok.com/search?q=vé+concert+âm+nhạc+live+2025+việt+nam', discount: 19, badge: '🎤 Live Event',
+    },
+    {
+      name: 'Voucher Nhà Hàng Fine Dining Bữa Tối Lãng Mạn Cho 2 Người',
+      price: 1200000, originalPrice: 1500000,
+      imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 1200, sold: 3800, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=voucher+nhà+hàng+fine+dining+2+người+lãng+mạn', discount: 20, badge: '🍽️ Sang trọng',
+    },
+    {
+      name: 'Voucher Khóa Học Làm Bánh 1 Buổi Tại Baking Studio – Kèm Nguyên Liệu',
+      price: 350000, originalPrice: 500000,
+      imageUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 890, sold: 2900, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=voucher+khóa+học+làm+bánh+1+buổi+baking', discount: 30, badge: '🧁 Trải nghiệm',
+    },
+    {
+      name: 'Voucher Chụp Ảnh Studio Chuyên Nghiệp 1 Giờ – Kèm Chỉnh Ảnh',
+      price: 500000, originalPrice: 750000,
+      imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&h=600&fit=crop&q=90',
+      rating: 4.8, reviewCount: 780, sold: 2100, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=voucher+chụp+ảnh+studio+chuyên+nghiệp', discount: 33, badge: '📸 Creative',
+    },
+  ],
+
+  // ── Digital Gifts ─────────────────────────────────────────────────────────
+  digital: [
+    {
+      name: 'Thẻ Nạp Netflix Premium 1 Tháng – 4 Màn Hình HD/4K Ultra',
+      price: 260000, originalPrice: 310000,
+      imageUrl: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 18000, sold: 65000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=thẻ+nạp+netflix+premium+1+tháng', discount: 16, badge: '🎬 Quà số hot',
+    },
+    {
+      name: 'Gift Card Steam 500.000đ – Mua Game PC Bất Kỳ Theo Ý Thích',
+      price: 500000, originalPrice: 500000,
+      imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 12000, sold: 44000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=steam+wallet+code+500000+vnd', discount: 0, badge: '🎮 Gamer Gift',
+    },
+    {
+      name: 'Thẻ Spotify Premium 3 Tháng – Nghe Nhạc Offline Không Quảng Cáo',
+      price: 175000, originalPrice: 200000,
+      imageUrl: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 8900, sold: 32000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=spotify+premium+gift+card+3+tháng', discount: 13, badge: '🎵 Âm nhạc',
+    },
+    {
+      name: 'Thẻ App Store / Google Play 300.000đ – Mua App & Game Tùy Ý',
+      price: 300000, originalPrice: 300000,
+      imageUrl: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=600&h=600&fit=crop&q=90',
+      rating: 4.9, reviewCount: 6700, sold: 25000, source: 'shopee',
+      affiliateLink: 'https://shopee.vn/search?keyword=app+store+google+play+gift+card+300000', discount: 0, badge: '📱 Linh hoạt',
     },
   ],
 };
 
-// Default generic products if keyword matches nothing
-const DEFAULT_PRODUCTS: Omit<Product, 'id'>[] = [
-  {
-    name: 'Hộp quà tặng Handmade thiết kế xinh xắn',
-    price: 150000,
-    originalPrice: 200000,
-    imageUrl: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=400&h=400&fit=crop',
-    rating: 4.8,
-    reviewCount: 450,
-    sold: 1200,
-    source: 'shopee',
-    affiliateLink: 'https://shopee.vn/',
-    discount: 25,
-    badge: 'Quà hot',
-  },
-  {
-    name: 'Set Thiệp và Hoa khô mini handmade',
-    price: 45000,
-    originalPrice: 60000,
-    imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=400&h=400&fit=crop',
-    rating: 4.9,
-    reviewCount: 1280,
-    sold: 5300,
-    source: 'tiktok',
-    affiliateLink: 'https://tiktok.com/',
-    discount: 25,
-  }
-];
-
-function getCategoryFromKeyword(keyword: string): keyof typeof MOCK_CATEGORIES {
+// ============================================================
+// KEYWORD → CATEGORY MAPPING
+// ============================================================
+function getCategoryFromKeyword(keyword: string): string {
   const kw = keyword.toLowerCase();
 
-  // Books & reading
-  if (kw.includes('sách') || kw.includes('đọc') || kw.includes('truyện') || kw.includes('habits') || kw.includes('cuốn') || kw.includes('bookmark') || kw.includes('kệ sách') || kw.includes('đèn đọc')) return 'book';
+  if (kw.includes('vé') || kw.includes('voucher') || kw.includes('concert') || kw.includes('spa') || kw.includes('massage') || kw.includes('xem phim') || kw.includes('cgv') || kw.includes('escape room') || kw.includes('dining') || kw.includes('lớp học') || kw.includes('khóa học') || kw.includes('trải nghiệm') || kw.includes('chụp ảnh')) return 'experience';
+  if (kw.includes('netflix') || kw.includes('spotify') || kw.includes('steam') || kw.includes('google play') || kw.includes('app store') || kw.includes('gift card') || kw.includes('thẻ nạp') || kw.includes('digital') || kw.includes('game card')) return 'digital';
+  if (kw.includes('sách') || kw.includes('đọc') || kw.includes('truyện') || kw.includes('habits') || kw.includes('cuốn') || kw.includes('bookmark') || kw.includes('kệ sách') || kw.includes('đèn đọc') || kw.includes('sổ tay') || kw.includes('leuchtturm') || kw.includes('kindle')) return 'book';
+  if (kw.includes('gaming') || kw.includes('game') || kw.includes('bàn phím') || kw.includes('tay cầm') || kw.includes('mousepad') || kw.includes('lót chuột') || kw.includes('keychron') || kw.includes('steelseries') || kw.includes('xbox') || kw.includes('asus rog') || kw.includes('rgb') || kw.includes('esport')) return 'gaming';
+  if (kw.includes('tai nghe') || kw.includes('airpods') || kw.includes('jbl') || kw.includes('loa') || kw.includes('bluetooth') || kw.includes('đế sạc') || kw.includes('sạc không dây') || kw.includes('công nghệ') || kw.includes('pin dự phòng') || kw.includes('anker')) return 'tech';
+  if (kw.includes('son') || kw.includes('kem dưỡng') || kw.includes('skincare') || kw.includes('mỹ phẩm') || kw.includes('làm đẹp') || kw.includes('tẩy trang') || kw.includes('cọ') || kw.includes('gương') || kw.includes('máy rửa mặt') || kw.includes('serum') || kw.includes('mặt nạ') || kw.includes('foreo') || kw.includes('romand') || kw.includes('innisfree') || kw.includes('la roche')) return 'beauty';
+  if (kw.includes('nước hoa') || kw.includes('perfume') || kw.includes('fragrance') || kw.includes('nến') || kw.includes('thơm') || kw.includes('tinh dầu') || kw.includes('diptyque') || kw.includes('yankee') || kw.includes('chanel') || kw.includes('dior') && kw.includes('hương')) return 'candle';
+  if (kw.includes('trang sức') || kw.includes('vòng tay') || kw.includes('lắc') || kw.includes('nhẫn') || kw.includes('bạc s925') || kw.includes('dây chuyền') || kw.includes('vàng 18k') || kw.includes('jewelry')) return 'jewelry';
+  if (kw.includes('sáp') || kw.includes('layrite') || kw.includes('ví da') || kw.includes('kính mắt') || kw.includes('thắt lưng') || kw.includes('rayban') || kw.includes('sauvage') || kw.includes('dior') || kw.includes('adidas') || kw.includes('stan smith') || kw.includes('giày nam') || kw.includes('sneaker nam')) return 'menFashion';
+  if (kw.includes('túi') || kw.includes('tote') || kw.includes('thời trang') || kw.includes('áo khoác') || kw.includes('da pu') || kw.includes('baguette') || kw.includes('canvas bag') || kw.includes('giày nữ') || kw.includes('sneaker nữ')) return 'fashion';
+  if (kw.includes('bình') || kw.includes('giữ nhiệt') || kw.includes('stanley') || kw.includes('tumbler') || kw.includes('lock lock') || kw.includes('water bottle')) return 'bottle';
+  if (kw.includes('du lịch') || kw.includes('balo') || kw.includes('phượt') || kw.includes('thể thao') || kw.includes('chạy bộ') || kw.includes('gym') || kw.includes('osprey') || kw.includes('thule') || kw.includes('garmin') || kw.includes('lifestraw')) return 'travel';
+  if (kw.includes('bếp') || kw.includes('nấu ăn') || kw.includes('thớt') || kw.includes('muỗng') || kw.includes('tạp dề') || kw.includes('trà') || kw.includes('matcha') || kw.includes('acacia') || kw.includes('philips') || kw.includes('nồi chiên') || kw.includes('baking') || kw.includes('làm bánh')) return 'kitchen';
+  if (kw.includes('sổ') || kw.includes('planner') || kw.includes('bút') || kw.includes('văn phòng') || kw.includes('kế hoạch') || kw.includes('bullet journal')) return 'book';
 
-  // Gaming & tech accessories
-  if (kw.includes('gaming') || kw.includes('game') || kw.includes('bàn phím') || kw.includes('tay cầm') || kw.includes('mousepad') || kw.includes('lót chuột') || kw.includes('lego') || kw.includes('mô hình')) return 'gaming';
-
-  // General tech (non-gaming)
-  if (kw.includes('tai nghe') || kw.includes('led') || kw.includes('loa') || kw.includes('bluetooth') || kw.includes('đế sạc') || kw.includes('sạc') || kw.includes('usb') || kw.includes('công nghệ')) return 'tech';
-
-  // Beauty / skincare / makeup
-  if (kw.includes('son') || kw.includes('kem') || kw.includes('skincare') || kw.includes('mỹ phẩm') || kw.includes('làm đẹp') || kw.includes('tẩy trang') || kw.includes('cọ') || kw.includes('gương') || kw.includes('máy rửa mặt')) return 'beauty';
-
-  // Perfume / fragrance
-  if (kw.includes('nước hoa') || kw.includes('perfume') || kw.includes('hương') || kw.includes('nến') || kw.includes('thơm') || kw.includes('tinh dầu')) return 'candle';
-
-  // Jewelry & accessories
-  if (kw.includes('trang sức') || kw.includes('vòng') || kw.includes('lắc') || kw.includes('nhẫn') || kw.includes('bạc') || kw.includes('dây chuyền')) return 'jewelry';
-
-  // Fashion accessories (male)
-  if (kw.includes('sáp') || kw.includes('ví') || kw.includes('kính') || kw.includes('thắt lưng') || kw.includes('nam tính')) return 'menFashion';
-
-  // Fashion bags & clothing
-  if (kw.includes('túi') || kw.includes('tote') || kw.includes('thời trang') || kw.includes('da pu') || kw.includes('kẹp nách')) return 'fashion';
-
-  // Bottles & drinkware
-  if (kw.includes('bình') || kw.includes('giữ nhiệt') || kw.includes('stanley') || kw.includes('tumbler') || kw.includes('cốc') || kw.includes('water bottle')) return 'bottle';
-
-  // Travel & outdoor & sports
-  if (kw.includes('du lịch') || kw.includes('balo') || kw.includes('phượt') || kw.includes('thể thao') || kw.includes('chạy bộ') || kw.includes('gym') || kw.includes('quạt') || kw.includes('gối')) return 'travel';
-
-  // Kitchen & cooking
-  if (kw.includes('bếp') || kw.includes('nấu') || kw.includes('thớt') || kw.includes('muỗng') || kw.includes('dĩa') || kw.includes('tạp dề') || kw.includes('đánh trứng') || kw.includes('trà')) return 'kitchen';
-
-  // Health & wellness
-  if (kw.includes('sức khỏe') || kw.includes('thảo mộc') || kw.includes('gối tựa') || kw.includes('an thần') || kw.includes('ngủ ngon')) return 'kitchen';
-
-  // Plants & decor
-  if (kw.includes('cây') || kw.includes('sen đá') || kw.includes('chậu') || kw.includes('decor') || kw.includes('đèn ngủ') || kw.includes('trang trí')) return 'candle';
-
-  // Stationery
-  if (kw.includes('sổ') || kw.includes('planner') || kw.includes('bút') || kw.includes('văn phòng') || kw.includes('kế hoạch')) return 'book';
-
-  return 'candle'; // default
+  return 'experience'; // default: show experiences for unknown keywords
 }
 
+// ============================================================
+// CLAUDE API CALL (if API key available)
+// ============================================================
 async function callClaudeForProducts(keyword: string, apiKey: string): Promise<Product[]> {
   const prompt = `Bạn là trợ lý tìm sản phẩm Việt Nam. Từ khóa: "${keyword}".
 Tạo danh sách 6 sản phẩm ĐANG BÁN THẬT trên Shopee / TikTok Shop, ưu tiên:
-1. Giá THẤP NHẤT so với cùng mặt hàng – ưu tiên hàng giảm giá nhiều
-2. Đánh giá CỰC CAO (rating ≥ 4.8, ưu tiên 4.9 – 5.0)
+1. Giá THẤP NHẤT so với cùng mặt hàng
+2. Đánh giá CỰC CAO (rating ≥ 4.8)
 3. Lượt bán NHIỀU (sold ≥ 1000)
-4. Tên sản phẩm ĐẦY ĐỦ, THẬT, có thương hiệu hoặc model rõ ràng
-5. price và originalPrice là số nguyên VNĐ, KHÔNG có ký tự khác
-6. imageUrl: link Unsplash hợp chủ đề, đảm bảo hoạt động
-7. affiliateLink: link search thật trên Shopee (https://shopee.vn/search?keyword=...) hoặc TikTok
+4. Tên sản phẩm ĐẦY ĐỦ, có thương hiệu rõ ràng
+5. price và originalPrice là số nguyên VNĐ
 
-Traả về CHỈ JSON:
+Trả về CHỈ JSON:
 {
   "products": [
-    { "id": "p1", "name": "...", "price": 150000, "originalPrice": 220000, "imageUrl": "https://images.unsplash.com/...", "rating": 4.9, "reviewCount": 3200, "sold": 8500, "source": "shopee", "affiliateLink": "https://shopee.vn/search?keyword=...", "discount": 32, "badge": "Bán chạy" }
+    { "id": "p1", "name": "...", "price": 150000, "originalPrice": 220000, "imageUrl": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=600&fit=crop&q=90", "rating": 4.9, "reviewCount": 3200, "sold": 8500, "source": "shopee", "affiliateLink": "https://shopee.vn/search?keyword=...", "discount": 32, "badge": "Bán chạy" }
   ]
 }`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-3-5-haiku-20241022',
-      max_tokens: 2048,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: 2048, messages: [{ role: 'user', content: prompt }] }),
   });
 
   if (!response.ok) throw new Error(`Claude status: ${response.status}`);
@@ -670,6 +469,9 @@ Traả về CHỈ JSON:
   return parsed.products || [];
 }
 
+// ============================================================
+// GET HANDLER
+// ============================================================
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -677,7 +479,7 @@ export async function GET(request: NextRequest) {
 
     let products: Product[] = [];
 
-    // 1. Try real Claude AI generation if API key is present
+    // 1. Try Claude AI first
     if (process.env.ANTHROPIC_API_KEY) {
       try {
         products = await callClaudeForProducts(keyword, process.env.ANTHROPIC_API_KEY);
@@ -686,13 +488,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 2. Fallback to Smart Mock Generator
+    // 2. Fallback to curated mock data
     if (products.length === 0) {
       await new Promise((r) => setTimeout(r, 600));
       const category = getCategoryFromKeyword(keyword);
-      const matchedMocks = MOCK_CATEGORIES[category] || MOCK_CATEGORIES.candle;
-
-      const shopeeSearchUrl = `https://shopee.vn/search?keyword=${encodeURIComponent(keyword)}`;
+      const matchedMocks = MOCK_CATEGORIES[category] || MOCK_CATEGORIES.experience;
+      const shopeeUrl = `https://shopee.vn/search?keyword=${encodeURIComponent(keyword)}`;
+      const tiktokUrl = `https://www.tiktok.com/search?q=${encodeURIComponent(keyword)}`;
 
       products = matchedMocks.map((item, index) => ({
         id: `dyn_${category}_${index}`,
@@ -704,47 +506,37 @@ export async function GET(request: NextRequest) {
         reviewCount: item.reviewCount,
         sold: item.sold,
         source: item.source as 'shopee' | 'tiktok',
-        affiliateLink: item.source === 'shopee' ? shopeeSearchUrl : 'https://www.tiktok.com/search?q=' + encodeURIComponent(keyword),
+        affiliateLink: item.affiliateLink || (item.source === 'shopee' ? shopeeUrl : tiktokUrl),
         discount: item.discount,
         badge: item.badge,
+        sizes: item.sizes,
       }));
     }
 
-    // ── Sort: 5-star first (rating DESC), then cheapest (price ASC) ──
+    // ── Sort: highest rating first, then cheapest ──
     products.sort((a, b) => {
       if (b.rating !== a.rating) return b.rating - a.rating;
       return a.price - b.price;
     });
 
-    // ── Assign smart badges ──
+    // ── Auto-assign smart badges ──
     if (products.length > 0) {
-      // Highest rated
       const topRated = products.reduce((best, p) => (p.rating > best.rating ? p : best), products[0]);
-      if (topRated.rating >= 4.9) topRated.badge = '⭐ Đánh giá 5 sao';
+      if (topRated.rating >= 4.9 && !topRated.badge) topRated.badge = '⭐ Đánh giá 5 sao';
 
-      // Cheapest (among same-category shopee items)
       const shopeeItems = products.filter((p) => p.source === 'shopee');
       if (shopeeItems.length > 0) {
         const cheapest = shopeeItems.reduce((min, p) => (p.price < min.price ? p : min), shopeeItems[0]);
-        if (!cheapest.badge || cheapest.badge === '') cheapest.badge = '💸 Giá rẻ nhất';
-        else cheapest.badge = '💸 Rẻ nhất · ' + cheapest.badge;
+        if (!cheapest.badge) cheapest.badge = '💸 Giá rẻ nhất';
       }
 
-      // Top seller
       const topSeller = products.reduce((best, p) => (p.sold > best.sold ? p : best), products[0]);
       if (!topSeller.badge) topSeller.badge = '🔥 Bán chạy nhất';
     }
 
-    return NextResponse.json({
-      products,
-      keyword,
-      totalFound: products.length,
-    });
+    return NextResponse.json({ products, keyword, totalFound: products.length });
   } catch (error) {
     console.error('search-online error:', error);
-    return NextResponse.json(
-      { error: 'Không thể tìm kiếm sản phẩm. Vui lòng thử lại.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Không thể tìm kiếm sản phẩm. Vui lòng thử lại.' }, { status: 500 });
   }
 }
