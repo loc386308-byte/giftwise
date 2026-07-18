@@ -58,9 +58,18 @@ const AGE_OPTIONS = [
 ];
 
 const ZODIAC_OPTIONS = [
-  'Bạch Dương ♈', 'Kim Ngưu ♉', 'Song Tử ♊', 'Cự Giải ♋',
-  'Sư Tử ♌', 'Xử Nữ ♍', 'Thiên Bình ♎', 'Bọ Cạp ♏',
-  'Nhân Mã ♐', 'Ma Kết ♑', 'Bảo Bình ♒', 'Song Ngư ♓',
+  { id: 'Bạch Dương ♈', name: 'Bạch Dương', symbol: '♈', emoji: '🐏', color: 'linear-gradient(135deg,#ff6b6b,#ee0979)' },
+  { id: 'Kim Ngưu ♉',   name: 'Kim Ngưu',   symbol: '♉', emoji: '🐂', color: 'linear-gradient(135deg,#56ab2f,#a8e063)' },
+  { id: 'Song Tử ♊',    name: 'Song Tử',    symbol: '♊', emoji: '👯', color: 'linear-gradient(135deg,#f7971e,#ffd200)' },
+  { id: 'Cự Giải ♋',   name: 'Cự Giải',   symbol: '♋', emoji: '🦀', color: 'linear-gradient(135deg,#4facfe,#00f2fe)' },
+  { id: 'Sư Tử ♌',     name: 'Sư Tử',     symbol: '♌', emoji: '🦁', color: 'linear-gradient(135deg,#f093fb,#f5576c)' },
+  { id: 'Xử Nữ ♍',     name: 'Xử Nữ',     symbol: '♍', emoji: '🌾', color: 'linear-gradient(135deg,#43e97b,#38f9d7)' },
+  { id: 'Thiên Bình ♎', name: 'Thiên Bình', symbol: '♎', emoji: '⚖️', color: 'linear-gradient(135deg,#fa709a,#fee140)' },
+  { id: 'Bọ Cạp ♏',    name: 'Bọ Cạp',    symbol: '♏', emoji: '🦂', color: 'linear-gradient(135deg,#a18cd1,#fbc2eb)' },
+  { id: 'Nhân Mã ♐',   name: 'Nhân Mã',   symbol: '♐', emoji: '🏹', color: 'linear-gradient(135deg,#667eea,#764ba2)' },
+  { id: 'Ma Kết ♑',    name: 'Ma Kết',    symbol: '♑', emoji: '🐐', color: 'linear-gradient(135deg,#30cfd0,#330867)' },
+  { id: 'Bảo Bình ♒',  name: 'Bảo Bình',  symbol: '♒', emoji: '🏺', color: 'linear-gradient(135deg,#0072ff,#00c6ff)' },
+  { id: 'Song Ngư ♓',  name: 'Song Ngư',  symbol: '♓', emoji: '🐟', color: 'linear-gradient(135deg,#f77062,#fe5196)' },
 ];
 
 const PERSONALITY_OPTIONS = [
@@ -328,39 +337,53 @@ function QuizInner() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
               {ZODIAC_OPTIONS.map((z) => {
-                const isSelected = answers.zodiac === z;
-                const [name, symbol] = [z.split(' ')[0], z.split(' ')[1]];
+                const isSelected = answers.zodiac === z.id;
                 return (
                   <motion.button
-                    key={z}
+                    key={z.id}
                     whileTap={{ scale: 0.92 }}
-                    onClick={() => setAnswer('zodiac', isSelected ? '' : z)}
+                    onClick={() => setAnswer('zodiac', isSelected ? '' : z.id)}
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '0.3rem',
+                      gap: '0.4rem',
                       padding: '0.75rem 0.25rem',
-                      borderRadius: '14px',
+                      borderRadius: '16px',
                       border: `2px solid ${isSelected ? 'var(--color-accent-1)' : 'var(--color-border)'}`,
                       background: isSelected ? 'linear-gradient(135deg,#fdf0ff,#f0f0ff)' : 'white',
                       cursor: 'pointer',
                       fontFamily: 'inherit',
                       transition: 'all 0.15s ease',
-                      minHeight: '72px',
+                      minHeight: '82px',
+                      boxShadow: isSelected ? '0 2px 12px rgba(168,85,247,0.18)' : 'none',
                     }}
                   >
-                    <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>{symbol}</span>
+                    {/* Gradient icon circle */}
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: isSelected ? z.color : '#f3f4f6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.1rem',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                    }}>
+                      {z.emoji}
+                    </div>
                     <span style={{
-                      fontSize: '0.72rem',
+                      fontSize: '0.68rem',
                       fontWeight: 700,
                       color: isSelected ? 'var(--color-accent-1)' : 'var(--color-text)',
                       lineHeight: 1.3,
                       textAlign: 'center',
                       letterSpacing: '-0.01em',
                     }}>
-                      {name}
+                      {z.name}
                     </span>
                   </motion.button>
                 );
@@ -368,36 +391,62 @@ function QuizInner() {
             </div>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => setAnswer('zodiac', 'skip')}
+              onClick={() => setAnswer('zodiac', answers.zodiac === 'skip' ? '' : 'skip')}
               className={`chip ${answers.zodiac === 'skip' ? 'selected' : ''}`}
               style={{ justifyContent: 'center', padding: '0.75rem', fontFamily: 'inherit', width: '100%' }}
             >
               🤷 Không biết / Bỏ qua
             </motion.button>
-            {answers.zodiac && answers.zodiac !== 'skip' && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{
-                  padding: '0.75rem 1rem', borderRadius: '12px',
-                  background: 'linear-gradient(135deg,#fdf0ff,#ede9fe)',
-                  fontSize: '0.8rem', color: 'var(--color-text)', lineHeight: 1.5,
-                }}
-              >
-                {answers.zodiac === 'Bạch Dương ♈' && '♈ Bạch Dương: Năng động, dẫn đầu, yêu thể thao & công nghệ. Ghét sự nhàm chán.'}
-                {answers.zodiac === 'Kim Ngưu ♉' && '♉ Kim Ngưu: Yêu sự xa hoa, ẩm thực, thẩm mỹ. Thích đồ chất lượng cao.'}
-                {answers.zodiac === 'Song Tử ♊' && '♊ Song Tử: Đa tài, tò mò, xã hội. Thích sự mới lạ và trải nghiệm đa dạng.'}
-                {answers.zodiac === 'Cự Giải ♋' && '♋ Cự Giải: Tình cảm, ấm áp, yêu gia đình. Trân trọng quà có ý nghĩa cảm xúc.'}
-                {answers.zodiac === 'Sư Tử ♌' && '♌ Sư Tử: Rực rỡ, tự tin, yêu sự sang trọng. Thích đồ nổi bật và cao cấp.'}
-                {answers.zodiac === 'Xử Nữ ♍' && '♍ Xử Nữ: Tỉ mỉ, thực tế, quan tâm sức khỏe. Thích quà thiết thực và chất lượng.'}
-                {answers.zodiac === 'Thiên Bình ♎' && '♎ Thiên Bình: Thẩm mỹ cao, yêu nghệ thuật & vẻ đẹp. Ưa sự hài hòa tinh tế.'}
-                {answers.zodiac === 'Bọ Cạp ♏' && '♏ Bọ Cạp: Bí ẩn, đam mê, sâu sắc. Thích quà huyền bí, đặc biệt, độc đáo.'}
-                {answers.zodiac === 'Nhân Mã ♐' && '♐ Nhân Mã: Tự do, phiêu lưu, lạc quan. Thích trải nghiệm mới và du lịch.'}
-                {answers.zodiac === 'Ma Kết ♑' && '♑ Ma Kết: Tham vọng, thực dụng, kỷ luật. Thích quà hữu ích cho công việc & thành công.'}
-                {answers.zodiac === 'Bảo Bình ♒' && '♒ Bảo Bình: Độc đáo, sáng tạo, công nghệ. Thích quà tiên phong, không đụng hàng.'}
-                {answers.zodiac === 'Song Ngư ♓' && '♓ Song Ngư: Mơ mộng, nghệ thuật, cảm xúc. Thích quà lãng mạn và có chiều sâu.'}
-              </motion.div>
-            )}
+            {answers.zodiac && answers.zodiac !== 'skip' && (() => {
+              const chosen = ZODIAC_OPTIONS.find(z => z.id === answers.zodiac);
+              const descriptions: Record<string, string> = {
+                'Bạch Dương ♈': 'Năng động, dẫn đầu, yêu thể thao & công nghệ. Ghét sự nhàm chán.',
+                'Kim Ngưu ♉':   'Yêu sự xa hoa, ẩm thực & thẩm mỹ. Thích đồ chất lượng cao.',
+                'Song Tử ♊':    'Đa tài, tò mò, hướng ngoại. Thích sự mới lạ và trải nghiệm đa dạng.',
+                'Cự Giải ♋':   'Tình cảm, ấm áp, yêu gia đình. Trân trọng quà có ý nghĩa cảm xúc.',
+                'Sư Tử ♌':     'Rực rỡ, tự tin, yêu sự sang trọng. Thích đồ nổi bật và cao cấp.',
+                'Xử Nữ ♍':     'Tỉ mỉ, thực tế, quan tâm sức khỏe. Thích quà thiết thực và chất lượng.',
+                'Thiên Bình ♎': 'Thẩm mỹ cao, yêu nghệ thuật & vẻ đẹp. Ưa sự hài hòa tinh tế.',
+                'Bọ Cạp ♏':    'Bí ẩn, đam mê, sâu sắc. Thích quà huyền bí, đặc biệt, độc đáo.',
+                'Nhân Mã ♐':   'Tự do, phiêu lưu, lạc quan. Thích trải nghiệm mới và du lịch.',
+                'Ma Kết ♑':    'Tham vọng, thực dụng, kỷ luật. Thích quà hữu ích cho công việc.',
+                'Bảo Bình ♒':  'Độc đáo, sáng tạo, yêu công nghệ. Thích quà tiên phong, không đụng hàng.',
+                'Song Ngư ♓':  'Mơ mộng, nghệ thuật, cảm xúc. Thích quà lãng mạn và có chiều sâu.',
+              };
+              return (
+                <motion.div
+                  key={answers.zodiac}
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    padding: '0.875rem 1rem', borderRadius: '14px',
+                    background: 'linear-gradient(135deg,#fdf0ff,#ede9fe)',
+                    border: '1px solid #e9d5ff',
+                  }}
+                >
+                  {chosen && (
+                    <div style={{
+                      width: '42px', height: '42px', borderRadius: '50%',
+                      background: chosen.color, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      fontSize: '1.3rem', flexShrink: 0,
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+                    }}>
+                      {chosen.emoji}
+                    </div>
+                  )}
+                  <div>
+                    <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-accent-1)', marginBottom: '0.15rem' }}>
+                      {answers.zodiac}
+                    </p>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', lineHeight: 1.5, margin: 0 }}>
+                      {descriptions[answers.zodiac] || ''}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })()}
           </div>
         );
 
