@@ -329,24 +329,38 @@ function QuizInner() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
               {ZODIAC_OPTIONS.map((z) => {
                 const isSelected = answers.zodiac === z;
+                const [name, symbol] = [z.split(' ')[0], z.split(' ')[1]];
                 return (
                   <motion.button
                     key={z}
                     whileTap={{ scale: 0.92 }}
                     onClick={() => setAnswer('zodiac', isSelected ? '' : z)}
                     style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center',
-                      gap: '0.2rem', padding: '0.6rem 0.4rem',
-                      borderRadius: '14px', border: '2px solid',
-                      borderColor: isSelected ? 'var(--color-accent-1)' : 'var(--color-border)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.3rem',
+                      padding: '0.75rem 0.25rem',
+                      borderRadius: '14px',
+                      border: `2px solid ${isSelected ? 'var(--color-accent-1)' : 'var(--color-border)'}`,
                       background: isSelected ? 'linear-gradient(135deg,#fdf0ff,#f0f0ff)' : 'white',
-                      cursor: 'pointer', fontFamily: 'inherit',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
                       transition: 'all 0.15s ease',
+                      minHeight: '72px',
                     }}
                   >
-                    <span style={{ fontSize: '1.4rem' }}>{z.split(' ')[1]}</span>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: isSelected ? 'var(--color-accent-1)' : 'var(--color-text)', lineHeight: 1.2, textAlign: 'center' }}>
-                      {z.split(' ')[0]}
+                    <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>{symbol}</span>
+                    <span style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: isSelected ? 'var(--color-accent-1)' : 'var(--color-text)',
+                      lineHeight: 1.3,
+                      textAlign: 'center',
+                      letterSpacing: '-0.01em',
+                    }}>
+                      {name}
                     </span>
                   </motion.button>
                 );
