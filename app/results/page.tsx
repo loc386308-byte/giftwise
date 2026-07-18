@@ -236,8 +236,8 @@ export default function ResultsPage() {
                 >
                   AI đã gợi ý <span className="gradient-text">{suggestions.length} món quà</span> cho bạn!
                 </h1>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
-                  Bấm <strong>🛒 Mua Online</strong> hoặc <strong>📍 Cửa hàng</strong> trực tiếp trên từng món quà để tìm ngay
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '0.75rem' }}>
+                  Phân tích từ {[answers?.zodiac && answers.zodiac !== 'skip' && 'cung hoàng đạo', (answers?.personality?.length ?? 0) > 0 && 'tính cách', (answers?.interests?.length ?? 0) > 0 && 'sở thích', 'ngân sách'].filter(Boolean).join(' · ')}
                 </p>
                 {answers && (
                   <div
@@ -246,19 +246,37 @@ export default function ResultsPage() {
                       flexWrap: 'wrap',
                       gap: '0.375rem',
                       justifyContent: 'center',
-                      marginTop: '0.875rem',
+                      marginTop: '0.25rem',
                     }}
                   >
-                    {[answers.occasion, answers.relationship, answers.gender, answers.ageRange, answers.budget]
+                    {[
+                      answers.occasion && `🎉 ${answers.occasion}`,
+                      answers.relationship && `👤 ${answers.relationship}`,
+                      answers.gender && `${answers.gender === 'nữ' ? '👩' : answers.gender === 'nam' ? '👨' : '🌈'} ${answers.gender}`,
+                      answers.ageRange && `🎂 ${answers.ageRange}`,
+                      answers.zodiac && answers.zodiac !== 'skip' && `⭐ ${answers.zodiac}`,
+                      answers.budget && `💰 ${answers.budget}`,
+                    ]
                       .filter(Boolean)
                       .map((tag, i) => (
                         <span key={i} className="chip selected" style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem' }}>
                           {tag}
                         </span>
                       ))}
+                    {(answers.personality || []).slice(0, 2).map((p, i) => (
+                      <span key={`p${i}`} className="chip" style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', background: '#ede9fe', color: '#7c3aed', border: '1px solid #c4b5fd' }}>
+                        ✨ {p}
+                      </span>
+                    ))}
+                    {(answers.interests || []).slice(0, 2).map((interest, i) => (
+                      <span key={`i${i}`} className="chip" style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', background: '#fdf0ff', color: '#a21caf', border: '1px solid #e879f9' }}>
+                        🎯 {interest}
+                      </span>
+                    ))}
                   </div>
                 )}
               </>
+
             )}
           </motion.div>
         </div>

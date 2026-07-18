@@ -66,13 +66,18 @@ const ZODIAC_OPTIONS = [
 const PERSONALITY_OPTIONS = [
   { id: 'hài hước', label: 'Hài hước', emoji: '😄' },
   { id: 'trầm tính', label: 'Trầm tính', emoji: '🧘' },
+  { id: 'hướng nội', label: 'Hướng nội', emoji: '🏠' },
+  { id: 'hướng ngoại', label: 'Hướng ngoại', emoji: '🎉' },
   { id: 'năng động', label: 'Năng động', emoji: '⚡' },
   { id: 'lãng mạn', label: 'Lãng mạn', emoji: '🌹' },
   { id: 'thực tế', label: 'Thực tế', emoji: '🎯' },
   { id: 'sáng tạo', label: 'Sáng tạo', emoji: '🎨' },
-  { id: 'yêu công nghệ', label: 'Yêu công nghệ', emoji: '💻' },
+  { id: 'đam mê công nghệ', label: 'Yêu công nghệ', emoji: '💻' },
   { id: 'yêu làm đẹp', label: 'Yêu làm đẹp', emoji: '💄' },
   { id: 'mê ăn uống', label: 'Mê ăn uống', emoji: '🍜' },
+  { id: 'thích xa hoa', label: 'Thích xa hoa', emoji: '✨' },
+  { id: 'chăm sóc bản thân', label: 'Tự chăm sóc', emoji: '🛁' },
+  { id: 'yêu thiên nhiên', label: 'Yêu thiên nhiên', emoji: '🌿' },
 ];
 
 const INTEREST_OPTIONS = [
@@ -85,14 +90,19 @@ const INTEREST_OPTIONS = [
   { id: 'âm nhạc', label: 'Âm nhạc', emoji: '🎵' },
   { id: 'thời trang', label: 'Thời trang', emoji: '👗' },
   { id: 'nhiếp ảnh', label: 'Nhiếp ảnh', emoji: '📷' },
+  { id: 'phim ảnh', label: 'Xem phim', emoji: '🎬' },
+  { id: 'yoga', label: 'Yoga / Pilates', emoji: '🧘' },
+  { id: 'gym', label: 'Gym / Fitness', emoji: '💪' },
+  { id: 'nghệ thuật', label: 'Nghệ thuật', emoji: '🎭' },
+  { id: 'mỹ phẩm', label: 'Skincare', emoji: '🧴' },
 ];
 
 const BUDGET_OPTIONS = [
-  { id: 'dưới 100.000đ', label: 'Dưới 100k', value: 0 },
-  { id: '100.000đ - 300.000đ', label: '100k – 300k', value: 1 },
-  { id: '300.000đ - 500.000đ', label: '300k – 500k', value: 2 },
-  { id: '500.000đ - 1.000.000đ', label: '500k – 1tr', value: 3 },
-  { id: 'trên 1.000.000đ', label: 'Trên 1tr', value: 4 },
+  { id: 'dưới 100.000đ', label: 'Dưới 100k', sub: 'Quà mini dễ thương', emoji: '🎀', value: 0 },
+  { id: '100.000đ - 300.000đ', label: '100k – 300k', sub: 'Quà casual, tinh tế', emoji: '🛍️', value: 1 },
+  { id: '300.000đ - 500.000đ', label: '300k – 500k', sub: 'Quà chất lượng tốt', emoji: '🎁', value: 2 },
+  { id: '500.000đ - 1.000.000đ', label: '500k – 1tr', sub: 'Quà ý nghĩa, premium', emoji: '💝', value: 3 },
+  { id: 'trên 1.000.000đ', label: 'Trên 1 triệu', sub: 'Quà cao cấp, đẳng cấp', emoji: '👑', value: 4 },
 ];
 
 // ========================
@@ -316,40 +326,64 @@ function QuizInner() {
       case 4:
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <select
-              value={answers.zodiac || ''}
-              onChange={(e) => setAnswer('zodiac', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '1rem 1.25rem',
-                borderRadius: '16px',
-                border: '2px solid var(--color-border)',
-                background: 'white',
-                fontSize: '1rem',
-                fontFamily: 'inherit',
-                color: answers.zodiac ? 'var(--color-text)' : 'var(--color-text-muted)',
-                cursor: 'pointer',
-                outline: 'none',
-                transition: 'border-color 0.15s ease',
-              }}
-              onFocus={(e) => { e.target.style.borderColor = 'var(--color-accent-2)'; }}
-              onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)'; }}
-            >
-              <option value="">Chọn cung hoàng đạo...</option>
-              {ZODIAC_OPTIONS.map((z) => (
-                <option key={z} value={z}>{z}</option>
-              ))}
-            </select>
-            <button
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+              {ZODIAC_OPTIONS.map((z) => {
+                const isSelected = answers.zodiac === z;
+                return (
+                  <motion.button
+                    key={z}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => setAnswer('zodiac', isSelected ? '' : z)}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      gap: '0.2rem', padding: '0.6rem 0.4rem',
+                      borderRadius: '14px', border: '2px solid',
+                      borderColor: isSelected ? 'var(--color-accent-1)' : 'var(--color-border)',
+                      background: isSelected ? 'linear-gradient(135deg,#fdf0ff,#f0f0ff)' : 'white',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.4rem' }}>{z.split(' ')[1]}</span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: isSelected ? 'var(--color-accent-1)' : 'var(--color-text)', lineHeight: 1.2, textAlign: 'center' }}>
+                      {z.split(' ')[0]}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => setAnswer('zodiac', 'skip')}
               className={`chip ${answers.zodiac === 'skip' ? 'selected' : ''}`}
               style={{ justifyContent: 'center', padding: '0.75rem', fontFamily: 'inherit', width: '100%' }}
             >
               🤷 Không biết / Bỏ qua
-            </button>
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', textAlign: 'center' }}>
-              Cung hoàng đạo giúp AI gợi ý chính xác hơn, nhưng không bắt buộc
-            </p>
+            </motion.button>
+            {answers.zodiac && answers.zodiac !== 'skip' && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  padding: '0.75rem 1rem', borderRadius: '12px',
+                  background: 'linear-gradient(135deg,#fdf0ff,#ede9fe)',
+                  fontSize: '0.8rem', color: 'var(--color-text)', lineHeight: 1.5,
+                }}
+              >
+                {answers.zodiac === 'Bạch Dương ♈' && '♈ Bạch Dương: Năng động, dẫn đầu, yêu thể thao & công nghệ. Ghét sự nhàm chán.'}
+                {answers.zodiac === 'Kim Ngưu ♉' && '♉ Kim Ngưu: Yêu sự xa hoa, ẩm thực, thẩm mỹ. Thích đồ chất lượng cao.'}
+                {answers.zodiac === 'Song Tử ♊' && '♊ Song Tử: Đa tài, tò mò, xã hội. Thích sự mới lạ và trải nghiệm đa dạng.'}
+                {answers.zodiac === 'Cự Giải ♋' && '♋ Cự Giải: Tình cảm, ấm áp, yêu gia đình. Trân trọng quà có ý nghĩa cảm xúc.'}
+                {answers.zodiac === 'Sư Tử ♌' && '♌ Sư Tử: Rực rỡ, tự tin, yêu sự sang trọng. Thích đồ nổi bật và cao cấp.'}
+                {answers.zodiac === 'Xử Nữ ♍' && '♍ Xử Nữ: Tỉ mỉ, thực tế, quan tâm sức khỏe. Thích quà thiết thực và chất lượng.'}
+                {answers.zodiac === 'Thiên Bình ♎' && '♎ Thiên Bình: Thẩm mỹ cao, yêu nghệ thuật & vẻ đẹp. Ưa sự hài hòa tinh tế.'}
+                {answers.zodiac === 'Bọ Cạp ♏' && '♏ Bọ Cạp: Bí ẩn, đam mê, sâu sắc. Thích quà huyền bí, đặc biệt, độc đáo.'}
+                {answers.zodiac === 'Nhân Mã ♐' && '♐ Nhân Mã: Tự do, phiêu lưu, lạc quan. Thích trải nghiệm mới và du lịch.'}
+                {answers.zodiac === 'Ma Kết ♑' && '♑ Ma Kết: Tham vọng, thực dụng, kỷ luật. Thích quà hữu ích cho công việc & thành công.'}
+                {answers.zodiac === 'Bảo Bình ♒' && '♒ Bảo Bình: Độc đáo, sáng tạo, công nghệ. Thích quà tiên phong, không đụng hàng.'}
+                {answers.zodiac === 'Song Ngư ♓' && '♓ Song Ngư: Mơ mộng, nghệ thuật, cảm xúc. Thích quà lãng mạn và có chiều sâu.'}
+              </motion.div>
+            )}
           </div>
         );
 
@@ -412,38 +446,38 @@ function QuizInner() {
 
       case 7:
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Visual budget selector */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {BUDGET_OPTIONS.map((b) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {BUDGET_OPTIONS.map((b) => {
+              const isSelected = answers.budget === b.id;
+              return (
                 <motion.button
                   key={b.id}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setAnswer('budget', b.id)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '1rem 1.25rem',
-                    borderRadius: '16px',
-                    border: `2px solid ${answers.budget === b.id ? 'var(--color-accent-1)' : 'var(--color-border)'}`,
-                    background: answers.budget === b.id
-                      ? 'linear-gradient(135deg, #FFF1F8, #F5F3FF)'
-                      : 'white',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    fontFamily: 'inherit',
+                    display: 'flex', alignItems: 'center', gap: '1rem',
+                    padding: '1rem 1.25rem', borderRadius: '16px',
+                    border: `2px solid ${isSelected ? 'var(--color-accent-1)' : 'var(--color-border)'}`,
+                    background: isSelected ? 'linear-gradient(135deg,#FFF1F8,#F5F3FF)' : 'white',
+                    cursor: 'pointer', transition: 'all 0.15s ease', fontFamily: 'inherit',
+                    textAlign: 'left',
                   }}
                 >
-                  <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-text)' }}>
-                    {b.label}
-                  </span>
-                  <span style={{ fontSize: '1.5rem' }}>
-                    {'💸'.repeat(b.value + 1).slice(0, 3)}
-                  </span>
+                  <span style={{ fontSize: '1.8rem', flexShrink: 0 }}>{b.emoji}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: isSelected ? 'var(--color-accent-1)' : 'var(--color-text)' }}>
+                      {b.label}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '1px' }}>
+                      {b.sub}
+                    </div>
+                  </div>
+                  {isSelected && (
+                    <span style={{ fontSize: '1.2rem', color: 'var(--color-accent-1)', flexShrink: 0 }}>✓</span>
+                  )}
                 </motion.button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         );
 

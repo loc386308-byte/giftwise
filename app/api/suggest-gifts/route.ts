@@ -1,18 +1,388 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GiftSuggestion, QuizAnswers } from '@/types';
 
+// ─── Rate limiting ────────────────────────────────────────────────────────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
 function getRateLimit(ip: string): boolean {
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return true;
-  }
+  if (!entry || now > entry.resetAt) { rateLimitMap.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 }); return true; }
   if (entry.count >= 20) return false;
   entry.count++;
   return true;
+}
+
+// ─── Budget parser ────────────────────────────────────────────────────────────
+function parseBudget(budget: string): [number, number] {
+  const b = budget.toLowerCase().replace(/\./g, '').replace(/,/g, '');
+  if (b.includes('trên 1') || b.includes('> 1') || b.includes('1000000+')) return [1_000_000, 15_000_000];
+  if (b.includes('500') && b.includes('1')) return [500_000, 1_000_000];
+  if (b.includes('300') && b.includes('500')) return [300_000, 500_000];
+  if (b.includes('100') && b.includes('300')) return [100_000, 300_000];
+  if (b.includes('dưới 100') || b.includes('< 100')) return [20_000, 100_000];
+  const nums = b.match(/\d+/g)?.map(Number) ?? [];
+  if (nums.length >= 2) {
+    const [a, c] = [nums[0], nums[1]];
+    const scale = Math.max(a, c) < 10000 ? 1000 : 1;
+    return [Math.min(a, c) * scale, Math.max(a, c) * scale];
+  }
+  return [100_000, 500_000];
+}
+
+// ─── Zodiac analysis ──────────────────────────────────────────────────────────
+type ZodiacTraits = {
+  label: string; keywords: string[]; favoriteCategories: string[]; avoidCategories: string[];
+  giftPersonality: string; luckColor: string;
+};
+
+const ZODIAC_MAP: Record<string, ZodiacTraits> = {
+  'bạch dương': {
+    label: 'Bạch Dương ♈', keywords: ['mạo hiểm', 'năng động', 'dẫn đầu', 'thể thao', 'cạnh tranh'],
+    favoriteCategories: ['gaming', 'travel', 'tech', 'experiences'],
+    avoidCategories: ['candle'],
+    giftPersonality: 'táo bạo, đầy năng lượng', luckColor: 'đỏ',
+  },
+  'kim ngưu': {
+    label: 'Kim Ngưu ♉', keywords: ['xa xỉ', 'thoải mái', 'ẩm thực', 'nghệ thuật', 'thực tế'],
+    favoriteCategories: ['candle', 'kitchen', 'premium_beauty', 'premium_fashion'],
+    avoidCategories: ['digital'],
+    giftPersonality: 'sang trọng và tinh tế', luckColor: 'xanh lá',
+  },
+  'song tử': {
+    label: 'Song Tử ♊', keywords: ['đa tài', 'tò mò', 'xã hội', 'sáng tạo', 'linh hoạt'],
+    favoriteCategories: ['book', 'experiences', 'digital', 'gaming'],
+    avoidCategories: [],
+    giftPersonality: 'phong phú và đa dạng', luckColor: 'vàng',
+  },
+  'cự giải': {
+    label: 'Cự Giải ♋', keywords: ['cảm xúc', 'gia đình', 'hoài niệm', 'chăm sóc', 'ấm cúng'],
+    favoriteCategories: ['candle', 'kitchen', 'general_female', 'personalized'],
+    avoidCategories: ['gaming'],
+    giftPersonality: 'ấm áp và đầy tình cảm', luckColor: 'bạc',
+  },
+  'sư tử': {
+    label: 'Sư Tử ♌', keywords: ['nổi bật', 'sang trọng', 'tự tin', 'sân khấu', 'lãnh đạo'],
+    favoriteCategories: ['jewelry', 'premium_fashion', 'experiences', 'premium_beauty'],
+    avoidCategories: [],
+    giftPersonality: 'rực rỡ và đẳng cấp', luckColor: 'vàng',
+  },
+  'xử nữ': {
+    label: 'Xử Nữ ♍', keywords: ['tỉ mỉ', 'thực tế', 'sức khỏe', 'sạch sẽ', 'có tổ chức'],
+    favoriteCategories: ['beauty', 'book', 'kitchen', 'wellness'],
+    avoidCategories: [],
+    giftPersonality: 'tinh tế và chu đáo', luckColor: 'xanh navy',
+  },
+  'thiên bình': {
+    label: 'Thiên Bình ♎', keywords: ['thẩm mỹ', 'hài hòa', 'làm đẹp', 'nghệ thuật', 'xã hội'],
+    favoriteCategories: ['beauty', 'jewelry', 'experiences', 'candle'],
+    avoidCategories: [],
+    giftPersonality: 'thẩm mỹ cao và lịch thiệp', luckColor: 'hồng nhạt',
+  },
+  'bọ cạp': {
+    label: 'Bọ Cạp ♏', keywords: ['bí ẩn', 'đam mê', 'sâu sắc', 'quyến rũ', 'mạnh mẽ'],
+    favoriteCategories: ['candle', 'premium_beauty', 'jewelry', 'experiences'],
+    avoidCategories: [],
+    giftPersonality: 'huyền bí và quyến rũ', luckColor: 'đỏ đậm',
+  },
+  'nhân mã': {
+    label: 'Nhân Mã ♐', keywords: ['tự do', 'phiêu lưu', 'triết học', 'du lịch', 'lạc quan'],
+    favoriteCategories: ['travel', 'book', 'experiences', 'gaming'],
+    avoidCategories: [],
+    giftPersonality: 'phóng khoáng và đầy nhiệt huyết', luckColor: 'tím',
+  },
+  'ma kết': {
+    label: 'Ma Kết ♑', keywords: ['tham vọng', 'thực dụng', 'kỷ luật', 'công việc', 'thành công'],
+    favoriteCategories: ['tech', 'book', 'premium_fashion', 'general_male'],
+    avoidCategories: [],
+    giftPersonality: 'thực dụng và đẳng cấp', luckColor: 'đen',
+  },
+  'bảo bình': {
+    label: 'Bảo Bình ♒', keywords: ['độc đáo', 'công nghệ', 'nhân đạo', 'tiên phong', 'sáng tạo'],
+    favoriteCategories: ['tech', 'digital', 'experiences', 'gaming'],
+    avoidCategories: ['candle'],
+    giftPersonality: 'độc đáo và tiên phong', luckColor: 'xanh điện',
+  },
+  'song ngư': {
+    label: 'Song Ngư ♓', keywords: ['mơ mộng', 'nghệ thuật', 'tâm linh', 'cảm xúc', 'sáng tạo'],
+    favoriteCategories: ['candle', 'book', 'experiences', 'beauty'],
+    avoidCategories: [],
+    giftPersonality: 'lãng mạn và đầy cảm hứng', luckColor: 'xanh biển',
+  },
+};
+
+function getZodiac(zodiac: string): ZodiacTraits | null {
+  const z = zodiac.toLowerCase().trim();
+  for (const [key, val] of Object.entries(ZODIAC_MAP)) {
+    if (z.includes(key) || key.includes(z)) return val;
+  }
+  return null;
+}
+
+// ─── Occasion analysis ────────────────────────────────────────────────────────
+function getOccasionBonus(occasion: string): Record<string, number> {
+  const o = occasion.toLowerCase();
+  if (o.includes('valentine') || o.includes('tình nhân')) return { jewelry: 4, candle: 3, experiences: 3, premium_beauty: 2 };
+  if (o.includes('sinh nhật')) return { experiences: 3, gaming: 2, tech: 2, premium_fashion: 2, jewelry: 2 };
+  if (o.includes('tốt nghiệp')) return { tech: 3, book: 3, travel: 2, premium_fashion: 2 };
+  if (o.includes('kỷ niệm') || o.includes('anniversary')) return { jewelry: 4, experiences: 4, candle: 3, premium_beauty: 2 };
+  if (o.includes('giáng sinh') || o.includes('noel') || o.includes('tết')) return { premium_fashion: 3, gaming: 2, candle: 3, book: 2, experiences: 2 };
+  if (o.includes('8/3') || o.includes('phụ nữ')) return { beauty: 3, jewelry: 3, candle: 2, experiences: 2 };
+  if (o.includes('20/11') || o.includes('nhà giáo')) return { book: 3, candle: 2, premium_beauty: 2, kitchen: 2 };
+  if (o.includes('thăng chức') || o.includes('công việc')) return { premium_fashion: 3, tech: 3, book: 2 };
+  return {};
+}
+
+// ─── Master gift pool (with budget tags) ─────────────────────────────────────
+type RawGift = {
+  name: string; emoji: string; category: string;
+  price: number; reason: string; searchKeyword: string;
+  tags: string[]; // e.g. ['female','young','beauty','luxury']
+};
+
+const ALL_GIFTS: RawGift[] = [
+  // ── EXPERIENCES ──
+  { name: 'Combo Vé CGV 2 Người + Bắp Rang + Nước', emoji: '🎬', category: 'Trải nghiệm', price: 250_000, tags: ['any','young','experience','couple'], reason: 'Buổi tối xem phim hoàn hảo — tạo kỷ niệm đẹp hơn bất kỳ món đồ vật nào.', searchKeyword: 'combo vé cgv 2 người bắp nước' },
+  { name: 'Voucher Spa & Massage Body 90 Phút Thư Giãn Toàn Thân', emoji: '💆', category: 'Trải nghiệm', price: 450_000, tags: ['any','female','wellness','experience'], reason: 'Quà tặng thư giãn đỉnh cao — ai nhận cũng thích hơn mọi đồ vật khác.', searchKeyword: 'voucher spa massage body 90 phút' },
+  { name: 'Vé Concert / Show Âm Nhạc Live 2025 Hạng Standing', emoji: '🎤', category: 'Trải nghiệm', price: 890_000, tags: ['any','young','music','experience'], reason: 'Kỷ niệm sống mãi trong lòng — năng lượng sân khấu không thể tái tạo.', searchKeyword: 'vé concert âm nhạc live 2025 việt nam' },
+  { name: 'Voucher Nhà Hàng Fine Dining Bữa Tối Lãng Mạn 2 Người', emoji: '🍽️', category: 'Trải nghiệm', price: 1_200_000, tags: ['any','couple','premium','experience','luxury'], reason: 'Bữa tối sang trọng tạo kỷ niệm ngọt ngào — ý nghĩa đặc biệt với người yêu.', searchKeyword: 'voucher nhà hàng fine dining 2 người lãng mạn' },
+  { name: 'Voucher Khóa Học Làm Bánh 1 Buổi Tại Studio', emoji: '🧁', category: 'Trải nghiệm', price: 350_000, tags: ['any','female','creative','experience'], reason: 'Học làm bánh cùng nhau — vừa vui, vừa mang về sản phẩm tự hào.', searchKeyword: 'voucher khóa học làm bánh 1 buổi baking studio' },
+  { name: 'Voucher Chụp Ảnh Studio Chuyên Nghiệp 1h Kèm Chỉnh Ảnh', emoji: '📸', category: 'Trải nghiệm', price: 500_000, tags: ['any','young','creative','experience'], reason: 'Lưu giữ khoảnh khắc đẹp bằng ảnh chuyên nghiệp — kỷ niệm không phai.', searchKeyword: 'voucher chụp ảnh studio chuyên nghiệp 1 giờ' },
+  { name: 'Voucher Yoga / Pilates 1 Tháng Không Giới Hạn Buổi', emoji: '🧘', category: 'Trải nghiệm', price: 1_500_000, tags: ['female','wellness','premium','experience'], reason: 'Đầu tư sức khỏe lâu dài — quà tặng ý nghĩa nhất cho người quan tâm bản thân.', searchKeyword: 'voucher yoga pilates 1 tháng unlimited' },
+  { name: 'Trải Nghiệm Escape Room Nhóm 2h (2-4 người)', emoji: '🔐', category: 'Trải nghiệm', price: 280_000, tags: ['any','young','fun','experience'], reason: 'Cùng phá đảo phòng thoát hiểm — thử thách kết nối cực kỳ thú vị.', searchKeyword: 'escape room vé nhóm 2 người' },
+
+  // ── DIGITAL GIFTS ──
+  { name: 'Thẻ Nạp Netflix Premium 1 Tháng 4K Ultra HD', emoji: '🎬', category: 'Quà số', price: 260_000, tags: ['any','young','digital','entertainment'], reason: 'Xem phim 4K không giới hạn suốt 1 tháng — quà số tiện lợi nhất hiện nay.', searchKeyword: 'thẻ nạp netflix premium 1 tháng 4k' },
+  { name: 'Gift Card Steam 500.000đ Mua Game PC Tùy Ý', emoji: '🎮', category: 'Quà số', price: 500_000, tags: ['male','young','gaming','digital'], reason: 'Cho phép mua bất kỳ game nào — gamer nào cũng thích nhất quà này!', searchKeyword: 'steam wallet code 500000 vnd' },
+  { name: 'Spotify Premium 3 Tháng Nghe Nhạc Offline Không Ads', emoji: '🎵', category: 'Quà số', price: 175_000, tags: ['any','young','music','digital'], reason: 'Nghe nhạc không giới hạn, không quảng cáo — 3 tháng trải nghiệm xịn nhất.', searchKeyword: 'spotify premium gift card 3 tháng' },
+  { name: 'Gift Card App Store / Google Play 300.000đ', emoji: '📱', category: 'Quà số', price: 300_000, tags: ['any','young','digital'], reason: 'Mua app, game, subscription bất kỳ theo ý thích — tự do lựa chọn.', searchKeyword: 'app store google play gift card 300000' },
+
+  // ── BOOKS & READING ──
+  { name: 'Sách Atomic Habits — Thay Đổi 1% Mỗi Ngày Bìa Cứng Mạ Vàng', emoji: '📚', category: 'Sách', price: 139_000, tags: ['any','book','self-help','young'], reason: 'Cuốn sách 30 triệu bản toàn cầu — thay đổi thói quen để bứt phá thực sự.', searchKeyword: 'atomic habits bìa cứng mạ vàng special edition' },
+  { name: 'Sổ Tay Leuchtturm1917 A5 Dotted — Bullet Journal Premium', emoji: '📓', category: 'Văn phòng phẩm', price: 390_000, tags: ['any','book','creative','organized'], reason: 'Sổ tay được dân bullet journal toàn thế giới yêu thích — chất lượng Đức xuất sắc.', searchKeyword: 'leuchtturm1917 a5 dotted bullet journal' },
+  { name: 'Kindle Paperwhite 11th Gen 8GB — E-Ink Không Mỏi Mắt', emoji: '📖', category: 'Thiết bị', price: 3_490_000, tags: ['any','book','tech','premium'], reason: 'Thư viện 8GB trong lòng bàn tay — đọc cả năm không mỏi mắt.', searchKeyword: 'kindle paperwhite 11th gen 8gb chính hãng' },
+
+  // ── BEAUTY (FEMALE) ──
+  { name: 'Son Kem Lì Romand Zero Velvet Tint #25 Mauve Beach', emoji: '💄', category: 'Son môi', price: 149_000, tags: ['female','beauty','young','trendy'], reason: 'Màu sắc trendy chuẩn Hàn Quốc — chất bám màu cả ngày không lem không khô môi.', searchKeyword: 'romand zero velvet tint 25 mauve beach' },
+  { name: 'Kem Chống Nắng La Roche-Posay Anthelios SPF50+ Oil Free 50ml', emoji: '🧴', category: 'Skincare', price: 385_000, tags: ['female','beauty','skincare'], reason: 'Kem chống nắng bác sĩ da liễu khuyên dùng #1 — bảo vệ da suốt ngày không bóng nhờn.', searchKeyword: 'la roche posay anthelios spf50 oil free' },
+  { name: 'Set Mặt Nạ Innisfree Jeju Volcanic Clay 10 miếng', emoji: '🌋', category: 'Skincare', price: 220_000, tags: ['female','beauty','skincare','young'], reason: 'Combo detox da viral TikTok — thu nhỏ lỗ chân lông, da sạch sau 1 tuần.', searchKeyword: 'innisfree jeju volcanic pore clay mask 10' },
+  { name: 'Gương Trang Điểm LED Hollywood 18 Bóng 3 Chế Độ Sáng', emoji: '🪞', category: 'Dụng cụ', price: 340_000, tags: ['female','beauty','makeup'], reason: 'Ánh sáng chuẩn studio tại nhà — makeup như MUA professional ngay lập tức.', searchKeyword: 'gương trang điểm led hollywood 18 bóng' },
+  { name: 'Foreo Luna Mini 3 Máy Rửa Mặt Sóng Âm Silicon', emoji: '💎', category: 'Thiết bị làm đẹp', price: 1_890_000, tags: ['female','beauty','premium','tech'], reason: 'Làm sạch da sâu 99.5% bằng sóng âm — thiết bị skincare đáng đầu tư nhất.', searchKeyword: 'foreo luna mini 3 máy rửa mặt' },
+  { name: 'SK-II Facial Treatment Essence 230ml (Nước Thần FTE)', emoji: '✨', category: 'Skincare cao cấp', price: 3_890_000, tags: ['female','beauty','premium','luxury'], reason: 'Nước thần huyền thoại cải thiện da tuyệt vời chỉ trong 4 tuần — tặng cho người xứng đáng.', searchKeyword: 'skii facial treatment essence 230ml' },
+  { name: 'Nước Hoa Chanel Chance Eau Tendre EDT 100ml', emoji: '🌸', category: 'Nước hoa', price: 3_200_000, tags: ['female','luxury','candle','premium'], reason: 'Hương hoa nhẹ nhàng lãng mạn của Chanel — mùi hương của hạnh phúc đích thực.', searchKeyword: 'chanel chance eau tendre edt 100ml chính hãng' },
+  { name: 'Dyson Airwrap Multi-Styler Complete 2024', emoji: '💨', category: 'Thiết bị tóc', price: 12_990_000, tags: ['female','beauty','premium','luxury'], reason: 'Máy tạo kiểu tóc #1 thế giới — sấy, uốn, làm thẳng chỉ 1 thiết bị không làm hại tóc.', searchKeyword: 'dyson airwrap complete 2024 chính hãng' },
+
+  // ── BEAUTY (MALE) ──
+  { name: 'Sáp Vuốt Tóc LAYRITE Superhold Pomade 297g', emoji: '💈', category: 'Chăm sóc tóc', price: 290_000, tags: ['male','beauty','grooming'], reason: 'Sáp quốc dân được barbershop tin dùng — giữ kiểu bền cả ngày không cần xịt thêm.', searchKeyword: 'layrite superhold pomade 297g' },
+  { name: 'Nước Hoa Dior Sauvage EDT 100ml Nam Tính Lưu Hương 8h', emoji: '🏔️', category: 'Nước hoa', price: 3_100_000, tags: ['male','luxury','premium','beauty'], reason: 'Mùi hương biểu tượng của đàn ông hiện đại — ai cũng phải ngoái đầu khi ngửi.', searchKeyword: 'dior sauvage edt 100ml chính hãng' },
+  { name: 'Kiehl\'s Facial Fuel Energizing Moisture Treatment 125ml', emoji: '🧴', category: 'Skincare nam', price: 690_000, tags: ['male','beauty','skincare'], reason: 'Dưỡng ẩm chuyên biệt cho da nam — không bóng nhờn, bảo vệ cả ngày.', searchKeyword: 'kiehls facial fuel energizing moisturizer nam' },
+
+  // ── JEWELRY ──
+  { name: 'Lắc Tay Bạc Thật S925 Đính Đá CZ Lấp Lánh Hàn Quốc', emoji: '✨', category: 'Trang sức', price: 199_000, tags: ['female','jewelry','young'], reason: 'Bạc S925 thật, đính đá CZ lấp lánh — thiết kế Hàn Quốc trendy, đeo được mọi outfit.', searchKeyword: 'lắc tay bạc s925 đính đá cz hàn quốc' },
+  { name: 'Dây Chuyền Vàng 18K Mặt Ngôi Sao Đính Kim Cương Nhân Tạo', emoji: '⭐', category: 'Trang sức', price: 1_250_000, tags: ['female','jewelry','premium'], reason: 'Vàng 18K thật, kim cương nhân tạo sáng đẹp — quà tặng cao cấp đáng nhớ mãi.', searchKeyword: 'dây chuyền vàng 18k kim cương nhân tạo' },
+  { name: 'Nhẫn Bạc S925 Đính Đá Hoa Tinh Xảo Tặng Hộp Nhung', emoji: '💍', category: 'Trang sức', price: 245_000, tags: ['female','jewelry','young'], reason: 'Nhẫn bạc tinh xảo kèm hộp nhung sang trọng — giftbox đẹp cực kỳ.', searchKeyword: 'nhẫn bạc s925 đính đá hoa hộp nhung' },
+  { name: 'Đồng Hồ Daniel Wellington Classic 40mm NATO', emoji: '⌚', category: 'Đồng hồ', price: 2_890_000, tags: ['any','fashion','premium','luxury'], reason: 'Thiết kế tối giản Bắc Âu vượt thời gian — phụ kiện "sang mà không cần to tiếng".', searchKeyword: 'daniel wellington classic 40mm nato chính hãng' },
+
+  // ── FASHION (FEMALE) ──
+  { name: 'Túi Tote Canvas Local Brand Pastel — Unisex Đa Màu', emoji: '👜', category: 'Thời trang', price: 185_000, tags: ['female','fashion','young','trendy'], reason: 'Túi tote local brand chất lượng tốt — phối được với mọi outfit casual hàng ngày.', searchKeyword: 'túi tote canvas local brand pastel unisex' },
+  { name: 'Túi Xách Đeo Chéo Da PU Mini Baguette Vintage', emoji: '👛', category: 'Thời trang', price: 320_000, tags: ['female','fashion','young'], reason: 'Dáng baguette vintage đang cực hot — mini bag cute phối đi chơi hay cafe đều xịn.', searchKeyword: 'túi xách đeo chéo da pu mini baguette vintage' },
+  { name: 'Áo Khoác Dù Unisex 2 Lớp Chống Nước Local Brand', emoji: '🧥', category: 'Thời trang', price: 680_000, tags: ['any','fashion','young','trendy'], reason: 'Local brand Việt chống nước chuẩn — mặc 4 mùa, trendy streetwear không lo lỗi mốt.', searchKeyword: 'áo khoác dù unisex chống nước local brand việt nam' },
+  { name: 'Giày Sneaker Nữ Platform Retro Đế Dày Pastel', emoji: '👟', category: 'Giày', price: 425_000, tags: ['female','fashion','young','trendy'], reason: 'Đế dày retro đang hot trend — tăng chiều cao, phối đồ casual hay ulzzang đều đẹp.', searchKeyword: 'giày sneaker nữ platform retro đế dày pastel' },
+
+  // ── FASHION (MALE) ──
+  { name: 'Giày Adidas Stan Smith OG White/Green Chính Hãng', emoji: '👟', category: 'Giày', price: 2_190_000, tags: ['male','fashion','young','premium'], reason: 'Đôi sneaker kinh điển từ 1956 — phối được mọi outfit, không bao giờ lỗi mốt.', searchKeyword: 'adidas stan smith og white green chính hãng' },
+  { name: 'Ví Da Thật Nam Full-Grain Leather Slim RFID Blocking', emoji: '👛', category: 'Phụ kiện', price: 680_000, tags: ['male','fashion','premium'], reason: 'Da thật full-grain chống RFID — mỏng gọn đẳng cấp, đẹp dần theo thời gian.', searchKeyword: 'ví da thật nam full grain leather slim rfid' },
+  { name: 'Kính Rayban Wayfarer RB2140 Havana/G-15 Chính Hãng', emoji: '🕶️', category: 'Phụ kiện', price: 2_800_000, tags: ['male','fashion','premium','luxury'], reason: 'Kính huyền thoại từ 1956 — classic không bao giờ lỗi mốt, chống UV100%.', searchKeyword: 'rayban wayfarer rb2140 havana chính hãng' },
+
+  // ── TECH ──
+  { name: 'Apple AirPods 3 Lightning Case Chính Hãng VN/A', emoji: '🎵', category: 'Công nghệ', price: 2_790_000, tags: ['any','tech','premium','young'], reason: 'Âm thanh tuyệt vời, tích hợp hoàn hảo với iPhone — quà tech đỉnh nhất tầm giá này.', searchKeyword: 'airpods 3 lightning chính hãng vn' },
+  { name: 'Loa Bluetooth JBL Flip 6 Chống Nước IP67 Bass Mạnh', emoji: '🔊', category: 'Công nghệ', price: 1_890_000, tags: ['any','tech','premium','travel'], reason: 'Loa bluetooth tốt nhất tầm giá — bass mạnh, chống nước IP67, pin 12h đi đâu cũng được.', searchKeyword: 'jbl flip 6 chính hãng chống nước ip67' },
+  { name: 'Pin Dự Phòng Anker 737 PowerCore 26800mAh 140W', emoji: '🔋', category: 'Công nghệ', price: 1_290_000, tags: ['any','tech','practical'], reason: 'Pin khủng nhất Anker — sạc đầy MacBook Pro trong 96 phút, sạc điện thoại 5-6 lần.', searchKeyword: 'anker 737 powercore 26800mah 140w' },
+  { name: 'Đế Sạc Không Dây Anker 3-in-1 MagSafe 15W', emoji: '⚡', category: 'Công nghệ', price: 890_000, tags: ['any','tech','practical'], reason: 'Sạc đồng thời iPhone + AirPods + Apple Watch — gọn đẹp, loại bỏ hết dây cáp.', searchKeyword: 'anker wireless charger 3in1 magsafe 15w' },
+  { name: 'Sony WH-1000XM5 Chống Ồn Chủ Động 36h Chính Hãng', emoji: '🎧', category: 'Công nghệ', price: 7_490_000, tags: ['any','tech','premium','luxury','music'], reason: 'Chống ồn số 1 thế giới, pin 36h — dành cho người thực sự yêu âm nhạc và cần tập trung.', searchKeyword: 'sony wh-1000xm5 chống ồn chủ động chính hãng' },
+  { name: 'Apple Watch SE 2024 GPS 44mm Midnight Chính Hãng', emoji: '⌚', category: 'Công nghệ', price: 4_990_000, tags: ['any','tech','premium','wellness'], reason: 'Đồng hồ thông minh Apple giá tốt nhất — theo dõi sức khỏe chính xác, thông báo nhanh.', searchKeyword: 'apple watch se 2024 gps 44mm chính hãng' },
+
+  // ── GAMING ──
+  { name: 'Bàn Phím Cơ Keychron K2 Pro Bluetooth Hot-Swap RGB', emoji: '⌨️', category: 'Gaming', price: 2_490_000, tags: ['male','gaming','tech','young'], reason: 'Bàn phím cơ xịn nhất tầm giá — gõ phê, không dây, pin trâu, hot-swap switch tùy ý.', searchKeyword: 'keychron k2 pro bluetooth hot swap rgb' },
+  { name: 'Tai Nghe Gaming SteelSeries Arctis Nova 3 Surround 7.1', emoji: '🎧', category: 'Gaming', price: 1_290_000, tags: ['male','gaming','young'], reason: 'Âm thanh vòm 7.1, mic ClearCast crystal clear — bạn đồng hành không thể thiếu khi chiến game.', searchKeyword: 'steelseries arctis nova 3 surround 7.1' },
+  { name: 'Tay Cầm Xbox Wireless Controller Glacier Blue Chính Hãng', emoji: '🎮', category: 'Gaming', price: 1_590_000, tags: ['male','gaming','any'], reason: 'Tay cầm ergonomic hoàn hảo cho PC gaming — kết nối bluetooth 3 nền tảng, pin AA bền.', searchKeyword: 'xbox wireless controller glacier blue chính hãng' },
+  { name: 'Nintendo Switch OLED Model Neon/White Edition', emoji: '🎮', category: 'Gaming', price: 8_500_000, tags: ['any','gaming','premium'], reason: 'Console cầm tay tuyệt vời nhất 2024 — chơi ở nhà lẫn ngoài đường đều đỉnh.', searchKeyword: 'nintendo switch oled chính hãng' },
+
+  // ── TRAVEL & SPORT ──
+  { name: 'Bình Giữ Nhiệt Stanley Quencher H2.0 591ml Soft Matte', emoji: '🥤', category: 'Đồ dùng', price: 1_350_000, tags: ['any','travel','trendy','wellness'], reason: 'Item viral TikTok 2024 — giữ lạnh cả ngày, style đẹp phối outfit nào cũng được.', searchKeyword: 'stanley quencher h2.0 591ml soft matte' },
+  { name: 'Balo Thule Crossover 2 40L Chống Nước Ngăn Laptop 15"', emoji: '🎒', category: 'Du lịch', price: 2_900_000, tags: ['any','travel','premium'], reason: 'Balo du lịch bền nhất phân khúc — chống nước, ngăn giày riêng, ergonomic hoàn hảo.', searchKeyword: 'thule crossover 2 40l chống nước laptop' },
+  { name: 'Giày Chạy Bộ Nike React Miler 3 Đế React Siêu Êm', emoji: '👟', category: 'Thể thao', price: 2_590_000, tags: ['any','sport','travel','premium'], reason: 'Đế React siêu êm, thoáng khí — phù hợp chạy 5-15km hằng ngày, bền lâu.', searchKeyword: 'nike react miler 3 running shoes' },
+
+  // ── KITCHEN & HOME ──
+  { name: 'Nến Thơm Diptyque Baies 190g Hương Quả Mọng & Hoa Hồng', emoji: '🕯️', category: 'Nến cao cấp', price: 1_890_000, tags: ['female','candle','premium','luxury'], reason: 'Nến thơm huyền thoại Paris — hương nhẹ nhàng lâu tan, decor phòng cực sang trọng.', searchKeyword: 'diptyque baies candle 190g' },
+  { name: 'Nến Thơm Hoa Khô Handmade Hũ Thủy Tinh 200g', emoji: '🌸', category: 'Nến', price: 145_000, tags: ['female','candle','young'], reason: 'Nến thơm handmade Việt — hương hoa khô tự nhiên, decor phòng ngủ cực xinh.', searchKeyword: 'nến thơm hoa khô handmade hũ thủy tinh 200g' },
+  { name: 'Nồi Chiên Không Dầu Philips HD9270 7L Màn Hình Cảm Ứng', emoji: '🍗', category: 'Bếp', price: 2_890_000, tags: ['any','kitchen','premium','practical'], reason: 'Nồi chiên không dầu #1 thị trường — chiên giòn đều, tiết kiệm 80% dầu ăn, 7L gia đình.', searchKeyword: 'philips hd9270 nồi chiên không dầu 7l' },
+  { name: 'Set Trà Matcha Nhật Bản Cao Cấp — Bột + Chén + Chổi', emoji: '🍵', category: 'Ẩm thực', price: 450_000, tags: ['any','kitchen','japan','creative'], reason: 'Trải nghiệm pha trà Nhật tại nhà — tặng cho người yêu văn hóa và ẩm thực Nhật Bản.', searchKeyword: 'set trà matcha nhật bản cao cấp bột chén chổi' },
+  { name: 'Thớt Gỗ Acacia Khắc Tên Miễn Phí Decor Bếp Sang', emoji: '🪵', category: 'Bếp', price: 380_000, tags: ['any','kitchen','personalized'], reason: 'Khắc tên miễn phí — quà tặng cá nhân hóa đẳng cấp mà giá cả không cao.', searchKeyword: 'thớt gỗ acacia khắc tên miễn phí decor bếp' },
+];
+
+// ─── The smart scoring engine ─────────────────────────────────────────────────
+function score(gift: RawGift, answers: QuizAnswers, zodiacTraits: ZodiacTraits | null, occasionBonus: Record<string, number>, budgetMin: number, budgetMax: number): number {
+  let s = 0;
+
+  // 1. Budget fit (most critical)
+  if (gift.price >= budgetMin && gift.price <= budgetMax) s += 10;
+  else if (gift.price >= budgetMin * 0.6 && gift.price <= budgetMax * 1.3) s += 4;
+  else return -99; // way out of budget → exclude
+
+  // 2. Gender match
+  const isMale = answers.gender.toLowerCase() === 'nam';
+  if (gift.tags.includes('male') && isMale) s += 3;
+  if (gift.tags.includes('female') && !isMale) s += 3;
+  if (gift.tags.includes('any')) s += 1;
+  if ((gift.tags.includes('male') && !isMale) || (gift.tags.includes('female') && isMale)) s -= 5;
+
+  // 3. Age match
+  const age = answers.ageRange.toLowerCase();
+  const isYoung = age.includes('13') || age.includes('19') || age.includes('25') || age.includes('gen z') || age.includes('18');
+  const isAdult = age.includes('26') || age.includes('35') || age.includes('36');
+  const isOlder = age.includes('36') || age.includes('50') || age.includes('trên');
+  if (gift.tags.includes('young') && isYoung) s += 2;
+  if (!gift.tags.includes('young') && isOlder) s += 1;
+
+  // 4. Zodiac match
+  if (zodiacTraits) {
+    const catTag = gift.category.toLowerCase();
+    for (const favCat of zodiacTraits.favoriteCategories) {
+      if (catTag.includes(favCat) || gift.tags.some(t => favCat.includes(t))) { s += 3; break; }
+    }
+    for (const avoidCat of zodiacTraits.avoidCategories) {
+      if (catTag.includes(avoidCat) || gift.tags.some(t => avoidCat.includes(t))) { s -= 2; break; }
+    }
+    // Zodiac keyword match
+    for (const kw of zodiacTraits.keywords) {
+      if (gift.tags.some(t => t.includes(kw)) || gift.reason.toLowerCase().includes(kw)) s += 1;
+    }
+  }
+
+  // 5. Occasion bonus
+  for (const [cat, bonus] of Object.entries(occasionBonus)) {
+    if (gift.tags.includes(cat) || gift.category.toLowerCase().includes(cat)) { s += bonus; break; }
+  }
+
+  // 6. Interest match
+  const interests = (answers.interests || []).map(i => i.toLowerCase());
+  const interestMap: Record<string, string[]> = {
+    'làm đẹp': ['beauty', 'female', 'skincare'], 'mỹ phẩm': ['beauty', 'premium_beauty'],
+    'đọc sách': ['book'], 'sách': ['book'], 'công nghệ': ['tech', 'gaming', 'digital'],
+    'gaming': ['gaming', 'digital'], 'game': ['gaming'],
+    'du lịch': ['travel', 'experience'], 'thể thao': ['sport', 'travel', 'wellness'],
+    'âm nhạc': ['music', 'digital', 'experience'], 'nấu ăn': ['kitchen', 'experience'],
+    'thời trang': ['fashion', 'jewelry'], 'phim': ['experience', 'digital', 'entertainment'],
+    'nhiếp ảnh': ['experience', 'creative'], 'nghệ thuật': ['creative', 'experience'],
+    'yoga': ['wellness', 'experience'], 'gym': ['sport', 'wellness'],
+  };
+  for (const interest of interests) {
+    for (const [key, tagList] of Object.entries(interestMap)) {
+      if (interest.includes(key)) {
+        for (const tag of tagList) {
+          if (gift.tags.includes(tag)) { s += 3; break; }
+        }
+      }
+    }
+  }
+
+  // 7. Personality match
+  const personalities = (answers.personality || []).map(p => p.toLowerCase());
+  const personalityMap: Record<string, string[]> = {
+    'sáng tạo': ['creative', 'book', 'experience'], 'năng động': ['sport', 'travel', 'experience'],
+    'hướng nội': ['book', 'candle', 'digital'], 'hướng ngoại': ['experience', 'travel'],
+    'thực tế': ['tech', 'practical', 'kitchen'], 'lãng mạn': ['candle', 'jewelry', 'experience'],
+    'đam mê công nghệ': ['tech', 'gaming', 'digital'], 'yêu thiên nhiên': ['travel', 'wellness'],
+    'chăm sóc bản thân': ['beauty', 'wellness', 'candle'], 'thích xa hoa': ['luxury', 'premium'],
+  };
+  for (const p of personalities) {
+    for (const [key, tagList] of Object.entries(personalityMap)) {
+      if (p.includes(key)) {
+        for (const tag of tagList) {
+          if (gift.tags.includes(tag)) { s += 2; break; }
+        }
+      }
+    }
+  }
+
+  // 8. Relationship context
+  const rel = answers.relationship.toLowerCase();
+  if ((rel.includes('người yêu') || rel.includes('bạn trai') || rel.includes('bạn gái')) &&
+    (gift.tags.includes('couple') || gift.tags.includes('luxury') || gift.tags.includes('jewelry'))) s += 3;
+  if ((rel.includes('bố') || rel.includes('mẹ') || rel.includes('ba')) &&
+    (gift.tags.includes('practical') || gift.tags.includes('kitchen') || gift.tags.includes('wellness'))) s += 2;
+  if (rel.includes('bạn thân') && gift.tags.includes('experience')) s += 2;
+  if ((rel.includes('sếp') || rel.includes('đồng nghiệp')) &&
+    (gift.tags.includes('premium') || gift.tags.includes('practical') || gift.tags.includes('book'))) s += 2;
+  if (rel.includes('con') && (gift.tags.includes('gaming') || gift.tags.includes('young') || gift.tags.includes('experience'))) s += 2;
+
+  // 9. Premium bonus for premium budget
+  if (budgetMin >= 1_000_000 && gift.tags.includes('luxury')) s += 3;
+  if (budgetMin >= 1_000_000 && gift.tags.includes('premium')) s += 2;
+  if (budgetMax <= 300_000 && gift.tags.includes('luxury')) s -= 3;
+
+  return s;
+}
+
+function buildReason(gift: RawGift, answers: QuizAnswers, zodiacTraits: ZodiacTraits | null): string {
+  const rel = answers.relationship.toLowerCase();
+  const zodiacNote = zodiacTraits
+    ? ` Đặc biệt hợp với tính cách ${zodiacTraits.giftPersonality} của ${zodiacTraits.label}!`
+    : '';
+
+  let relNote = '';
+  if (rel.includes('người yêu') || rel.includes('bạn trai') || rel.includes('bạn gái')) relNote = ' 💕 Thay lời muốn nói với người thương!';
+  else if (rel.includes('bố') || rel.includes('mẹ') || rel.includes('ba')) relNote = ' 🙏 Thể hiện sự yêu thương và hiếu kính của bạn.';
+  else if (rel.includes('bạn thân')) relNote = ' 🤗 Bạn thân chắc chắn sẽ thích mê khi nhận!';
+  else if (rel.includes('sếp') || rel.includes('đồng nghiệp')) relNote = ' 👔 Lịch sự, chỉn chu, gắn kết tình đồng nghiệp.';
+  else if (rel.includes('con')) relNote = ' 🎀 Phù hợp với lứa tuổi, kích thích sự vui vẻ & phát triển.';
+
+  return gift.reason + zodiacNote + relNote;
+}
+
+function generateSuggestions(answers: QuizAnswers): GiftSuggestion[] {
+  const [budgetMin, budgetMax] = parseBudget(answers.budget || '100.000đ – 300.000đ');
+  const zodiacTraits = getZodiac(answers.zodiac || '');
+  const occasionBonus = getOccasionBonus(answers.occasion || '');
+
+  // Score all gifts
+  const scored = ALL_GIFTS.map(g => ({ gift: g, s: score(g, answers, zodiacTraits, occasionBonus, budgetMin, budgetMax) }))
+    .filter(x => x.s > -50)
+    .sort((a, b) => b.s - a.s);
+
+  // Dedup by category to ensure variety (max 2 per category)
+  const catCount: Record<string, number> = {};
+  const selected: RawGift[] = [];
+  for (const { gift } of scored) {
+    const cat = gift.category;
+    catCount[cat] = (catCount[cat] || 0) + 1;
+    if (catCount[cat] <= 2) selected.push(gift);
+    if (selected.length >= 9) break;
+  }
+
+  // Pad to 9 if needed
+  if (selected.length < 9) {
+    for (const { gift } of scored) {
+      if (!selected.includes(gift)) { selected.push(gift); }
+      if (selected.length >= 9) break;
+    }
+  }
+
+  const fmt = (p: number) => {
+    const lo = Math.floor(p * 0.88).toLocaleString('vi-VN');
+    const hi = Math.floor(p * 1.12).toLocaleString('vi-VN');
+    return `${lo}đ – ${hi}đ`;
+  };
+
+  return selected.slice(0, 9).map((g, i) => ({
+    id: `sg_${i + 1}_${Date.now()}`,
+    productName: g.name,
+    reason: buildReason(g, answers, zodiacTraits),
+    estimatedPriceRange: fmt(g.price),
+    searchKeyword: g.searchKeyword,
+    emoji: g.emoji,
+    category: g.category,
+  }));
 }
 
 async function callAnthropicAPI(prompt: string): Promise<GiftSuggestion[]> {
@@ -23,363 +393,69 @@ async function callAnthropicAPI(prompt: string): Promise<GiftSuggestion[]> {
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
   });
-  if (!response.ok) throw new Error(`Anthropic API error: ${response.status}`);
+  if (!response.ok) throw new Error(`Anthropic error ${response.status}`);
   const data = await response.json();
-  const content = data.content?.[0]?.text || '';
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('No JSON in response');
-  const parsed = JSON.parse(jsonMatch[0]);
-  return parsed.suggestions || [];
+  const text = data.content?.[0]?.text || '';
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('No JSON');
+  return JSON.parse(match[0]).suggestions || [];
 }
 
-// ─── Budget parser ───────────────────────────────────────────────────────────
-function parseBudget(budget: string): [number, number] {
-  const b = budget.toLowerCase();
-  if (b.includes('trên 1') || b.includes('trên 1.000') || b.includes('trên 1,000') || b.includes('> 1')) return [1000000, 10000000];
-  if (b.includes('trên 500') || b.includes('> 500')) return [500000, 2000000];
-  const nums = budget.replace(/\./g, '').replace(/,/g, '').match(/\d+/g)?.map(Number) || [];
-  if (nums.length >= 2) {
-    const [a, b2] = [nums[0], nums[1]];
-    const scale = a < 1000 ? 1000 : 1;
-    return [a * scale, b2 * scale];
-  }
-  if (nums.length === 1) return [nums[0] * 1000 * 0.7, nums[0] * 1000];
-  return [100000, 500000];
-}
-
-type RawGift = { name: string; emoji: string; category: string; price: number; reason: string; searchKeyword?: string };
-
-function generateSmartMockSuggestions(answers: QuizAnswers): GiftSuggestion[] {
-  const gender = answers.gender.toLowerCase();
-  const age = answers.ageRange.toLowerCase();
-  const rel = answers.relationship.toLowerCase();
-  const interests = answers.interests || [];
-  const personality = answers.personality || [];
-  const [budgetMin, budgetMax] = parseBudget(answers.budget || '100.000đ – 500.000đ');
-
-  const isKid = age.includes('dưới 12') || age.includes('13-18');
-  const isOlder = age.includes('trên 50') || age.includes('36-50');
-  const isMale = gender === 'nam';
-  const isPremium = budgetMin >= 1000000;
-  const isMid = budgetMin >= 300000 && budgetMax <= 1000000;
-
-  const hasInterest = (...keys: string[]) => keys.some((k) => interests.some((i) => i.toLowerCase().includes(k)));
-  const hasPersonality = (...keys: string[]) => keys.some((k) => personality.some((p) => p.toLowerCase().includes(k)));
-
-  // ─── Gift pools by category and budget ──────────────────────────────────────
-  const giftPool: Record<string, RawGift[]> = {
-
-    // ── EXPERIENCES (any budget – scale by price) ──
-    experiences: [
-      { name: 'Vé xem phim CGV combo đôi (2 vé + 2 bắp rang + 2 nước)', emoji: '🎬', category: 'Trải nghiệm', price: 250000, reason: 'Buổi tối xem phim cực chill cùng người thân – kỷ niệm hơn đồ vật nhiều.', searchKeyword: 'vé xem phim cgv combo đôi' },
-      { name: 'Voucher Spa & Massage thư giãn 90 phút body toàn thân', emoji: '💆', category: 'Trải nghiệm', price: 450000, reason: 'Quà tặng thư giãn đỉnh cao – hơn mọi đồ vật, cảm giác mới là điều đọng lại.', searchKeyword: 'voucher spa massage 90 phút' },
-      { name: 'Vé Concert / Sự kiện âm nhạc live (hạng Standing)', emoji: '🎤', category: 'Trải nghiệm', price: 890000, reason: 'Kỷ niệm sống mãi không quên – hơn bất kỳ món quà vật chất nào.', searchKeyword: 'vé concert âm nhạc live vietnam' },
-      { name: 'Voucher Nhà hàng Fine Dining bữa tối lãng mạn cho 2 người', emoji: '🍽️', category: 'Trải nghiệm', price: 1200000, reason: 'Bữa tối sang trọng tạo kỷ niệm ngọt ngào – ý nghĩa đặc biệt với người thân.', searchKeyword: 'voucher nhà hàng fine dining 2 người' },
-      { name: 'Khóa học làm bánh/nấu ăn 1 buổi tại studio', emoji: '🧁', category: 'Trải nghiệm', price: 350000, reason: 'Học kỹ năng mới cùng nhau – vừa vui, vừa tạo ra món ăn ngon để tự hào.', searchKeyword: 'khóa học làm bánh 1 buổi' },
-      { name: 'Trải nghiệm Escape Room 2 tiếng cho nhóm', emoji: '🔐', category: 'Trải nghiệm', price: 220000, reason: 'Cùng nhau phá đảo phòng thoát hiểm – thử thách kết nối cực kỳ thú vị.', searchKeyword: 'escape room vé nhóm' },
-      { name: 'Vé Công viên nước Đầm Sen / Suối Tiên cả ngày', emoji: '🏊', category: 'Trải nghiệm', price: 180000, reason: 'Ngày hè thỏa sức vui chơi – quà tặng mà ai cũng mong chờ.', searchKeyword: 'vé công viên nước đầm sen' },
-      { name: 'Voucher Chụp ảnh studio chuyên nghiệp 1 giờ', emoji: '📸', category: 'Trải nghiệm', price: 500000, reason: 'Lưu giữ khoảnh khắc đẹp trong hình ảnh chuyên nghiệp để nhớ mãi.', searchKeyword: 'voucher chụp ảnh studio chuyên nghiệp' },
-      { name: 'Vé Lớp yoga / pilates 1 tháng unlimited', emoji: '🧘', category: 'Trải nghiệm', price: 1500000, reason: 'Đầu tư sức khỏe dài hạn – quà tặng ý nghĩa nhất cho người quan tâm bản thân.', searchKeyword: 'vé yoga pilates 1 tháng' },
-    ],
-
-    // ── PREMIUM TECH (>1 triệu) ──
-    premium_tech: [
-      { name: 'Tai nghe Apple AirPods 3 (Lightning) chính hãng VN', emoji: '🎵', category: 'Công nghệ cao cấp', price: 2790000, reason: 'Âm thanh xuất sắc, tích hợp hoàn hảo với iOS – quà tặng công nghệ đỉnh nhất.', searchKeyword: 'airpods 3 chính hãng vnpt' },
-      { name: 'Tai nghe Sony WH-1000XM5 chống ồn chủ động 36h', emoji: '🎧', category: 'Công nghệ cao cấp', price: 7490000, reason: 'Chống ồn số 1 thế giới, pin 36h – dành cho người yêu âm nhạc thực sự.', searchKeyword: 'sony wh-1000xm5 chính hãng' },
-      { name: 'Apple Watch SE 2024 44mm GPS Midnight', emoji: '⌚', category: 'Công nghệ cao cấp', price: 4990000, reason: 'Đồng hồ thông minh chính hãng Apple – theo dõi sức khỏe chuẩn xác suốt ngày.', searchKeyword: 'apple watch se 2024 chính hãng' },
-      { name: 'Kindle Paperwhite 11 8GB chống nước IPX8', emoji: '📖', category: 'Công nghệ cao cấp', price: 3490000, reason: 'Màn hình e-ink không mỏi mắt, 8GB chứa hàng ngàn cuốn sách – thiên đường đọc sách.', searchKeyword: 'kindle paperwhite 11th chính hãng' },
-      { name: 'JBL Flip 6 Loa Bluetooth Chống Nước IP67 Bass cực mạnh', emoji: '🔊', category: 'Công nghệ cao cấp', price: 1890000, reason: 'Loa bluetooth tốt nhất tầm giá – âm bass mạnh mẽ chuẩn đi tiệc hay dã ngoại.', searchKeyword: 'jbl flip 6 chính hãng' },
-      { name: 'iPad mini 6 Wifi 64GB Space Gray (refurb chính hãng)', emoji: '📱', category: 'Công nghệ cao cấp', price: 9900000, reason: 'Máy tính bảng nhỏ gọn hoàn hảo – học tập, sáng tạo, giải trí đỉnh cao.', searchKeyword: 'ipad mini 6 wifi 64gb refurb' },
-    ],
-
-    // ── PREMIUM BEAUTY (>500k) ──
-    premium_beauty: [
-      { name: 'Dyson Airwrap Multi-Styler Complete 2024 (hàng chính hãng)', emoji: '💨', category: 'Làm đẹp cao cấp', price: 12990000, reason: 'Máy tạo kiểu tóc số 1 thế giới – sấy, uốn, làm thẳng chỉ 1 thiết bị.', searchKeyword: 'dyson airwrap complete 2024' },
-      { name: 'SK-II Facial Treatment Essence 230ml (FTE nước thần)', emoji: '✨', category: 'Skincare cao cấp', price: 3890000, reason: 'Nước thần nổi tiếng nhất thế giới – cải thiện da tuyệt vời trong 4 tuần.', searchKeyword: 'skii facial treatment essence 230ml' },
-      { name: 'La Mer The Moisturizing Cream 30ml – kem dưỡng sang trọng', emoji: '🌊', category: 'Skincare cao cấp', price: 4200000, reason: 'Kem dưỡng huyền thoại từ biển – tặng cho ai xứng đáng được chiều chuộng.', searchKeyword: 'la mer moisturizing cream 30ml' },
-      { name: 'Lancôme La Vie est Belle EDP 100ml (nước hoa nữ iconic)', emoji: '🌸', category: 'Nước hoa cao cấp', price: 2890000, reason: 'Hương hoa iris ngọt ngào lãng mạn – mùi hương của hạnh phúc đích thực.', searchKeyword: 'lancome la vie est belle 100ml' },
-      { name: 'Set Skincare Laneige Water Bank 3 món (toner + serum + kem)', emoji: '💧', category: 'Skincare set', price: 1250000, reason: 'Bộ skincare cấp ẩm hoàn chỉnh từ thương hiệu Hàn Quốc hàng đầu.', searchKeyword: 'laneige water bank set 3 món' },
-    ],
-
-    // ── PREMIUM FASHION (>500k) ──
-    premium_fashion: [
-      { name: 'Túi xách da thật Furla Camelia Mini Crossbody chính hãng', emoji: '👜', category: 'Thời trang cao cấp', price: 5800000, reason: 'Túi da thật thương hiệu Ý đẳng cấp – quà tặng luxury mà ai cũng thích.', searchKeyword: 'furla camelia mini crossbody bag' },
-      { name: 'Đồng hồ Daniel Wellington Classic 40mm NATO dây vải', emoji: '⌚', category: 'Đồng hồ', price: 2890000, reason: 'Thiết kế tối giản Bắc Âu vượt thời gian – phụ kiện "sang mà không cần thương hiệu to".', searchKeyword: 'daniel wellington classic 40mm' },
-      { name: 'Giày Sneaker Adidas Stan Smith Premium All White', emoji: '👟', category: 'Giày', price: 2190000, reason: 'Đôi giày sneaker kinh điển – phối được mọi outfit từ casual đến smart casual.', searchKeyword: 'adidas stan smith premium white' },
-      { name: 'Ví da nam Louis Philippe Slim Leather Wallet RFID', emoji: '👛', category: 'Phụ kiện cao cấp', price: 890000, reason: 'Ví da mỏng gọn chuẩn chỉnh – thay thế ví cũ bằng cái xứng đáng hơn.', searchKeyword: 'ví da nam slim leather rfid cao cấp' },
-      { name: 'Áo khoác dù local brand unisex cao cấp chống nước', emoji: '🧥', category: 'Thời trang', price: 680000, reason: 'Áo khoác đa năng mặc 4 mùa – đủ ấm, gọn nhẹ, cực trendy local brand.', searchKeyword: 'áo khoác dù unisex local brand chống nước', },
-    ],
-
-    // ── GAMING (all budgets) ──
-    gaming: [
-      { name: 'Bàn phím cơ không dây layout 75% RGB hot-swap Keychron K2', emoji: '⌨️', category: 'Công nghệ', price: 2490000, reason: 'Bàn phím cơ xịn nhất tầm giá mid – gõ phê, build chắc chắn, pin trâu.', searchKeyword: 'keychron k2 bàn phím cơ không dây' },
-      { name: 'Chuột gaming Logitech G Pro X Superlight 2 không dây', emoji: '🖱️', category: 'Công nghệ', price: 2990000, reason: 'Chuột gaming nhẹ nhất thế giới – chuyên nghiệp esport, lướt mượt không lag.', searchKeyword: 'logitech g pro x superlight 2' },
-      { name: 'Tay cầm Xbox Series Wireless Controller (chính hãng)', emoji: '🎮', category: 'Giải trí', price: 1590000, reason: 'Tay cầm tốt nhất cho PC gaming – ergonomic hoàn hảo, pin AA bền lâu.', searchKeyword: 'xbox wireless controller series' },
-      { name: 'Lót chuột gaming ASUS ROG Scabbard II Extended 900×400', emoji: '🖱️', category: 'Phụ kiện', price: 890000, reason: 'Lót chuột cỡ XXL trải toàn bàn – bề mặt micro-textured precision tuyệt đỉnh.', searchKeyword: 'asus rog scabbard ii extended' },
-      { name: 'Tai nghe gaming SteelSeries Arctis Nova 3 7.1 Surround', emoji: '🎧', category: 'Công nghệ', price: 1290000, reason: 'Âm thanh vòm 7.1, mic ClearCast cực rõ – bạn đồng hành không thể thiếu khi game.', searchKeyword: 'steelseries arctis nova 3' },
-      { name: 'Nintendo Switch OLED Model (Neon/White Edition)', emoji: '🎮', category: 'Máy chơi game', price: 8500000, reason: 'Console cầm tay tuyệt vời nhất hiện tại – chơi ở nhà lẫn ngoài đường đều đỉnh.', searchKeyword: 'nintendo switch oled chính hãng' },
-      { name: 'Đèn LED RGB màn hình chống mỏi mắt Govee Immersion TV', emoji: '💡', category: 'Trang trí', price: 450000, reason: 'Tạo hiệu ứng ambilight cinematic cho màn hình TV/monitor – đỉnh của đỉnh.', searchKeyword: 'govee immersion tv led' },
-    ],
-
-    // ── BEAUTY FEMALE ──
-    beauty_female: [
-      { name: 'Son kem lì Romand Zero Velvet Tint #25 Mauve Beach', emoji: '💄', category: 'Son môi', price: 155000, reason: 'Màu sắc trendy chuẩn Hàn Quốc, chất son bám màu cả ngày không lem.', searchKeyword: 'romand zero velvet tint 25' },
-      { name: 'Serum Vitamin C 15% Paula\'s Choice C15 Booster 20ml', emoji: '✨', category: 'Skincare', price: 380000, reason: 'Serum vitamin C nổi tiếng nhất mạng – mờ thâm, sáng da hiệu quả 4 tuần.', searchKeyword: 'paulas choice c15 super booster' },
-      { name: 'Máy rửa mặt sóng âm silicon Foreo LUNA mini 3', emoji: '🧼', category: 'Thiết bị làm đẹp', price: 1890000, reason: 'Làm sạch da sâu 99.5% – thiết bị skincare đáng đầu tư nhất cho làn da đẹp.', searchKeyword: 'foreo luna mini 3' },
-      { name: 'Gương trang điểm LED Hollywood 18 bóng chống lóa', emoji: '🪞', category: 'Dụng cụ', price: 340000, reason: 'Ánh sáng chuẩn studio giúp makeup như pro artist ngay tại nhà.', searchKeyword: 'gương trang điểm led hollywood 18 bóng' },
-      { name: 'Nước hoa Chanel Chance Eau Tendre EDT 100ml', emoji: '🌸', category: 'Nước hoa cao cấp', price: 3200000, reason: 'Mùi hương nhẹ nhàng lãng mạn của Chanel – quà tặng xa xỉ đúng nghĩa.', searchKeyword: 'chanel chance eau tendre 100ml' },
-      { name: 'Set mặt nạ Innisfree Jeju Volcanic 10 miếng + serum cấp ẩm', emoji: '🍵', category: 'Skincare', price: 220000, reason: 'Combo detox da, thu nhỏ lỗ chân lông nổi tiếng TikTok – da sạch sau 1 tuần.', searchKeyword: 'innisfree volcanic pore clay mask set' },
-      { name: 'Mascara Dior Diorshow Iconic Overcurl 090 Black', emoji: '👁️', category: 'Trang điểm', price: 780000, reason: 'Mascara cong mi tốt nhất từ Dior – mi dày, cong vút, không trôi cả ngày.', searchKeyword: 'dior diorshow mascara overcurl' },
-      { name: 'Bộ cọ trang điểm Real Techniques 11 cây mềm mượt', emoji: '🖌️', category: 'Dụng cụ', price: 380000, reason: 'Bộ cọ yêu thích của MUA chuyên nghiệp – lông mềm, thoa đều, dễ vệ sinh.', searchKeyword: 'real techniques everyday essentials set' },
-    ],
-
-    // ── BEAUTY MALE ──
-    beauty_male: [
-      { name: 'Sáp vuốt tóc LAYRITE Superhold Pomade 297g hold cực cao', emoji: '🧴', category: 'Chăm sóc tóc', price: 290000, reason: 'Sáp quốc dân được barbershop tin dùng – giữ kiểu bền cả ngày không cần xịt.', searchKeyword: 'layrite superhold pomade 297g' },
-      { name: 'Nước hoa Dior Sauvage EDT 100ml (nam tính, lưu hương 8h)', emoji: '🧪', category: 'Nước hoa', price: 3100000, reason: 'Mùi hương biểu tượng của đàn ông hiện đại – ai cũng phải ngoái đầu khi ngửi.', searchKeyword: 'dior sauvage edt 100ml chính hãng' },
-      { name: 'Kem dưỡng da mặt nam Kiehl\'s Facial Fuel 125ml', emoji: '🧴', category: 'Skincare nam', price: 690000, reason: 'Dưỡng ẩm chuyên biệt cho da nam – không bóng nhờn, bảo vệ cả ngày.', searchKeyword: 'kiehls facial fuel moisturizer nam' },
-      { name: 'Ví da ngựa Horween nam full-grain leather bifold slim', emoji: '👛', category: 'Phụ kiện cao cấp', price: 890000, reason: 'Da thật cao cấp đẹp dần theo thời gian – "patina" càng dùng lâu càng đẹp.', searchKeyword: 'ví da thật nam full grain leather slim' },
-      { name: 'Kính râm Rayban Wayfarer RB2140 Havana/Green G-15', emoji: '🕶️', category: 'Phụ kiện cao cấp', price: 2800000, reason: 'Kính huyền thoại từ 1956 – classic không bao giờ lỗi mốt, chống tia UV100%.', searchKeyword: 'rayban wayfarer rb2140 chính hãng' },
-    ],
-
-    // ── READING (all budgets) ──
-    reading: [
-      { name: 'Sách Atomic Habits – James Clear (bản đặc biệt bìa cứng mạ vàng)', emoji: '📚', category: 'Sách bestseller', price: 215000, reason: 'Cuốn sách 30 triệu bản toàn cầu – thay đổi thói quen 1% mỗi ngày để bứt phá.', searchKeyword: 'atomic habits bìa cứng mạ vàng' },
-      { name: 'Sách The Subtle Art of Not Giving a F*ck (bản dịch)', emoji: '📖', category: 'Sách self-help', price: 135000, reason: 'Quan điểm sống thực tế, không cần "giả vờ tích cực" – GenZ cực thích.', searchKeyword: 'nghệ thuật tinh tế của việc đếch quan tâm' },
-      { name: 'Đèn đọc sách LED không gây chói kẹp bìa 3 chế độ sáng Baseus', emoji: '💡', category: 'Phụ kiện đọc sách', price: 195000, reason: 'Đọc sách khuya không ảnh hưởng người ngủ cùng – sáng đúng điểm không chói mắt.', searchKeyword: 'đèn đọc sách led baseus kẹp bìa' },
-      { name: 'Kindle Paperwhite Signature 32GB không viền màn hình e-ink', emoji: '📱', category: 'Thiết bị đọc sách', price: 5990000, reason: 'Thư viện 32GB trong lòng bàn tay – đọc sách cả năm không mỏi mắt.', searchKeyword: 'kindle paperwhite signature 32gb' },
-      { name: 'Set sổ tay Leuchtturm1917 A5 Dotted + bút Lamy Safari EF', emoji: '✒️', category: 'Văn phòng phẩm cao cấp', price: 650000, reason: 'Combo viết-lách premium mà dân bullet journal và creative đều mơ ước.', searchKeyword: 'leuchtturm1917 a5 dotted notebook set' },
-    ],
-
-    // ── TRAVEL / SPORTS ──
-    travel: [
-      { name: 'Balo du lịch Osprey Farpoint 40L chống nước chính hãng', emoji: '🎒', category: 'Du lịch cao cấp', price: 4200000, reason: 'Balo 40L xịn nhất cho travel – ergonomic, bền 10 năm, bảo hành trọn đời.', searchKeyword: 'osprey farpoint 40l chính hãng' },
-      { name: 'Máy lọc nước uống LifeStraw Personal Filter siêu gọn', emoji: '💧', category: 'Đồ phượt', price: 420000, reason: 'Uống nước trực tiếp từ suối sạch khuẩn 99.9999% – must-have cho dân phượt.', searchKeyword: 'lifestraw personal water filter' },
-      { name: 'Bình giữ nhiệt Stanley Quencher H2.0 30oz (887ml) Tumbler', emoji: '🥤', category: 'Đồ dùng viral', price: 1350000, reason: 'Item viral TikTok #1 – giữ lạnh 4h, hot 7h, đổ đá không tan cả ngày.', searchKeyword: 'stanley quencher h2.0 tumbler 30oz' },
-      { name: 'Vòng đeo tay Garmin vivofit 4 đo bước chân không sạc pin 1 năm', emoji: '🏃', category: 'Thể thao thông minh', price: 2390000, reason: 'Theo dõi bước chân, ngủ, calo – pin AA dùng 1 năm không cần sạc như các hãng khác.', searchKeyword: 'garmin vivofit 4 activity tracker' },
-      { name: 'Giày chạy bộ Nike React Miler 3 (Nam/Nữ)', emoji: '👟', category: 'Thể thao', price: 2590000, reason: 'Đế React siêu êm, thoáng khí, phù hợp chạy 5-15km hằng ngày.', searchKeyword: 'nike react miler 3 running shoes' },
-      { name: 'Túi du lịch Thule Crossover 2 Duffel 44L chống nước', emoji: '🧳', category: 'Du lịch', price: 2900000, reason: 'Túi du lịch bền nhất phân khúc – chống nước, có ngăn giày riêng biệt sạch sẽ.', searchKeyword: 'thule crossover 2 duffel 44l' },
-    ],
-
-    // ── COOKING ──
-    cooking: [
-      { name: 'Nồi chiên không dầu Philips HD9270 7L màn hình kỹ thuật số', emoji: '🍗', category: 'Đồ bếp cao cấp', price: 2890000, reason: 'Nồi chiên không dầu #1 thị trường – chiên giòn đều, tiết kiệm 80% dầu ăn.', searchKeyword: 'nồi chiên không dầu philips hd9270 7l' },
-      { name: 'Máy xay sinh tố Vitamix A2300 Ascent 2.0 HP motor', emoji: '🥤', category: 'Đồ bếp cao cấp', price: 12000000, reason: 'Máy xay mạnh nhất thế giới – xay mịn tuyết rau củ, hạt, đá trong 60 giây.', searchKeyword: 'vitamix a2300 ascent blender' },
-      { name: 'Set dao bếp Wüsthof Classic 5 món hộp gỗ tặng kèm', emoji: '🔪', category: 'Đồ bếp cao cấp', price: 5800000, reason: 'Dao Đức huyền thoại – sắc bén, cân bằng hoàn hảo, dùng cả đời không cùn.', searchKeyword: 'wusthof classic 5 piece knife set' },
-      { name: 'Thớt gỗ Acacia cao cấp nghiêng đặt decor + khắc tên miễn phí', emoji: '🪵', category: 'Đồ bếp', price: 380000, reason: 'Vừa đẹp vừa sang – khắc tên cặp đôi hoặc ngày sinh nhật cực có tâm.', searchKeyword: 'thớt gỗ acacia khắc tên cao cấp' },
-      { name: 'Set trà Matcha Nhật Bản cao cấp (bột + chén + chổi khuấy)', emoji: '🍵', category: 'Ẩm thực cao cấp', price: 450000, reason: 'Trải nghiệm pha trà Nhật tại nhà – tặng cho người yêu văn hóa Nhật.', searchKeyword: 'bộ dụng cụ pha trà matcha nhật bản' },
-    ],
-
-    // ── GENERAL FEMALE ──
-    general_female: [
-      { name: 'Nến thơm Diptyque Baies 190g hương quả berry + hoa hồng', emoji: '🕯️', category: 'Nến cao cấp', price: 1890000, reason: 'Nến thơm huyền thoại Paris – hương nhẹ nhàng lâu tan, decor phòng cực sang.', searchKeyword: 'diptyque baies candle 190g' },
-      { name: 'Bình giữ nhiệt Stanley Quencher 591ml Soft Matte Lilac', emoji: '🥤', category: 'Đồ dùng viral', price: 1350000, reason: 'Item viral TikTok 2024 – giữ lạnh cả ngày, hàng triệu chị em dùng.', searchKeyword: 'stanley quencher 591ml soft matte' },
-      { name: 'Chậu cây sen đá terracotta set 5 cây mix màu siêu đẹp', emoji: '🪴', category: 'Cây cảnh', price: 185000, reason: 'Bộ sen đá nhiều màu decor bàn làm việc – aesthetic, dễ chăm, không cần tưới nhiều.', searchKeyword: 'chậu cây sen đá terracotta mix màu set 5' },
-      { name: 'Túi tote da PU thương hiệu Việt local brand Tobi Studio', emoji: '👜', category: 'Thời trang', price: 420000, reason: 'Da PU cao cấp, đường chỉ đẹp – local brand Việt chất lượng xuất khẩu.', searchKeyword: 'túi tote da pu local brand việt nam cao cấp' },
-      { name: 'Vòng tay đá thạch anh hồng + đá mặt trăng phong thủy', emoji: '💎', category: 'Trang sức', price: 145000, reason: 'Mang ý nghĩa tình yêu, may mắn – tặng đầu năm hay sinh nhật đều ý nghĩa.', searchKeyword: 'vòng tay đá thạch anh hồng phong thủy' },
-    ],
-
-    // ── GENERAL MALE ──
-    general_male: [
-      { name: 'Pin dự phòng Anker 737 Power Bank 26800mAh 140W sạc nhanh', emoji: '🔋', category: 'Công nghệ', price: 1290000, reason: 'Pin khủng sạc nhanh nhất phân khúc – sạc đầy MacBook Pro trong 96 phút.', searchKeyword: 'anker 737 powerbank 26800mah 140w' },
-      { name: 'Balo laptop Bellroy Classic BackPack 20L da PU cao cấp', emoji: '🎒', category: 'Phụ kiện', price: 2890000, reason: 'Balo đi làm đẹp nhất – da cao cấp, chống nước, ngăn laptop 16" rộng rãi.', searchKeyword: 'bellroy classic backpack laptop bag' },
-      { name: 'Máy cạo râu Braun Series 9 Pro+ không dây 5 đầu cắt', emoji: '🪒', category: 'Chăm sóc nam', price: 4500000, reason: 'Máy cạo râu đỉnh nhất Braun – cạo sạch trong 1 lần kéo, không gây kích ứng.', searchKeyword: 'braun series 9 pro+ electric shaver' },
-      { name: 'Ví khóa kéo dài Tom Ford bi-fold leather card holder', emoji: '👛', category: 'Phụ kiện cao cấp', price: 3200000, reason: 'Ví da luxury tối giản – đẳng cấp không cần logo to, người biết hàng sẽ hiểu.', searchKeyword: 'ví da nam tom ford card holder' },
-      { name: 'Bộ bàn chải đánh răng điện Oral-B iO Series 9 + đế sạc', emoji: '🦷', category: 'Chăm sóc sức khỏe', price: 3990000, reason: 'Bàn chải điện AI thông minh nhất – 7 chế độ đánh, phân tích vùng thiếu đánh.', searchKeyword: 'oral-b io series 9 electric toothbrush' },
-    ],
-
-    // ── DIGITAL GIFTS ──
-    digital: [
-      { name: 'Thẻ nạp Netflix Premium 1 tháng (4 màn hình HD/4K)', emoji: '🎬', category: 'Giải trí số', price: 260000, reason: 'Xem phim, series không giới hạn HD/4K trong 30 ngày – quà tặng số tiện lợi.', searchKeyword: 'thẻ nạp netflix premium 1 tháng' },
-      { name: 'Thẻ Gift Card Spotify Premium 3 tháng không quảng cáo', emoji: '🎵', category: 'Âm nhạc số', price: 180000, reason: 'Nghe nhạc không giới hạn, không quảng cáo, offline mọi lúc mọi nơi.', searchKeyword: 'spotify premium gift card 3 tháng' },
-      { name: 'Voucher Game Steam 500.000đ mua game PC bất kỳ', emoji: '🎮', category: 'Game số', price: 500000, reason: 'Tặng "mua game tùy ý" – gamer nào cũng thích nhất quà này!', searchKeyword: 'steam wallet code 500000 vnd' },
-      { name: 'Thẻ App Store / Google Play 500.000đ mua app game', emoji: '📱', category: 'Ứng dụng số', price: 500000, reason: 'Nạp store để mua app, game, subscription bất kỳ theo ý thích.', searchKeyword: 'app store google play gift card 500000' },
-    ],
-  };
-
-  // ─── Smart multi-factor category selection ───────────────────────────────────
-  let selectedCategories: string[] = [];
-
-  // Experiences first (if budget allows + right occasion)
-  const isEventOccasion = answers.occasion?.toLowerCase().includes('sinh nhật') ||
-    answers.occasion?.toLowerCase().includes('kỷ niệm') ||
-    answers.occasion?.toLowerCase().includes('valentine') ||
-    answers.occasion?.toLowerCase().includes('giáng sinh');
-
-  if (isPremium || isMid) {
-    selectedCategories.push('experiences');
-  }
-
-  // Interest-based
-  if (hasInterest('gaming', 'game', 'công nghệ', 'tech', 'esport')) {
-    selectedCategories.push(isPremium ? 'premium_tech' : 'gaming');
-    selectedCategories.push('gaming');
-  }
-  if (hasInterest('làm đẹp', 'mỹ phẩm', 'thời trang', 'skincare')) {
-    selectedCategories.push(isMale ? (isPremium ? 'beauty_male' : 'beauty_male') : (isPremium ? 'premium_beauty' : 'beauty_female'));
-    if (isPremium) selectedCategories.push('premium_fashion');
-  }
-  if (hasInterest('đọc sách', 'sách', 'học', 'viết lách')) {
-    selectedCategories.push('reading');
-  }
-  if (hasInterest('du lịch', 'thể thao', 'phượt', 'gym', 'chạy bộ')) {
-    selectedCategories.push('travel');
-    selectedCategories.push('experiences');
-  }
-  if (hasInterest('nấu ăn', 'ẩm thực', 'cafe', 'bếp')) {
-    selectedCategories.push('cooking');
-    selectedCategories.push('experiences'); // cooking class
-  }
-  if (hasInterest('âm nhạc', 'nhạc', 'concert', 'ca hát')) {
-    selectedCategories.push('experiences');
-    selectedCategories.push('digital');
-  }
-  if (hasInterest('phim', 'xem phim', 'rạp', 'netflix')) {
-    selectedCategories.push('experiences');
-    selectedCategories.push('digital');
-  }
-
-  // Personality bonus
-  if (hasPersonality('sáng tạo', 'nghệ thuật') && !selectedCategories.includes('reading')) selectedCategories.push('reading');
-  if (hasPersonality('năng động', 'thể thao') && !selectedCategories.includes('travel')) selectedCategories.push('travel');
-
-  // Premium unlock
-  if (isPremium) {
-    selectedCategories.push(isMale ? 'general_male' : 'premium_beauty');
-    selectedCategories.push(isMale ? 'beauty_male' : 'premium_fashion');
-    selectedCategories.push('premium_tech');
-  }
-
-  // Kid-specific
-  if (isKid) {
-    selectedCategories = ['gaming', 'experiences', 'reading'];
-  }
-
-  // Older adult
-  if (isOlder) {
-    selectedCategories.push('cooking', 'experiences', 'travel');
-  }
-
-  // Default fallback
-  if (selectedCategories.length === 0) {
-    selectedCategories.push(isMale ? 'general_male' : 'general_female');
-    selectedCategories.push('experiences');
-  }
-
-  // Always add general + experiences
-  const genCat = isMale ? 'general_male' : 'general_female';
-  if (!selectedCategories.includes(genCat)) selectedCategories.push(genCat);
-  if (!selectedCategories.includes('experiences')) selectedCategories.push('experiences');
-
-  // ─── Build candidate pool ──────────────────────────────────────────────────
-  let candidatePool: RawGift[] = [];
-  const seenNames = new Set<string>();
-  for (const cat of selectedCategories) {
-    for (const g of giftPool[cat] || []) {
-      if (!seenNames.has(g.name)) {
-        seenNames.add(g.name);
-        candidatePool.push(g);
-      }
-    }
-  }
-
-  // ─── Budget filter (flexible ±40%) ──────────────────────────────────────────
-  const filtered = candidatePool.filter((g) => g.price >= budgetMin * 0.3 && g.price <= budgetMax * 1.4);
-  const finalPool = filtered.length >= 6 ? filtered : candidatePool;
-
-  // ─── Score by relevance ───────────────────────────────────────────────────
-  const scored = finalPool.map((g) => {
-    let score = 0;
-    if (g.price >= budgetMin && g.price <= budgetMax) score += 4;       // perfect budget match
-    else if (g.price < budgetMin) score -= 2;                            // too cheap
-    const firstCatPool = giftPool[selectedCategories[0]] || [];
-    if (firstCatPool.some((x) => x.name === g.name)) score += 3;       // primary interest
-    if (g.category.includes('cao cấp') && isPremium) score += 2;       // premium when budget allows
-    return { gift: g, score };
-  });
-
-  scored.sort((a, b) => b.score - a.score);
-  const top = scored.slice(0, 9).map((s) => s.gift);
-
-  // Fill to 9 with extras if needed
-  let extra = 0;
-  while (top.length < 9 && extra < candidatePool.length) {
-    const g = candidatePool[extra++];
-    if (!top.includes(g)) top.push(g);
-  }
-
-  // ─── Relationship-aware reason ───────────────────────────────────────────
-  const buildReason = (g: RawGift): string => {
-    if (rel === 'người yêu') return `${g.reason} 💕 Thay lời muốn nói với người thương của bạn!`;
-    if (rel.includes('bố') || rel.includes('mẹ')) return `${g.reason} Thể hiện sự hiếu kính và quan tâm sâu sắc của bạn.`;
-    if (rel.includes('bạn thân') || rel.includes('bạn bè')) return `${g.reason} Bạn thân chắc chắn sẽ thích mê ngay khi nhận được!`;
-    if (rel.includes('sếp') || rel.includes('đồng nghiệp')) return `${g.reason} Lựa chọn lịch sự, chỉn chu gắn kết tình đồng nghiệp.`;
-    if (rel.includes('con')) return `${g.reason} Phù hợp với lứa tuổi, kích thích sáng tạo và niềm vui.`;
-    return g.reason;
-  };
-
-  const fmt = (p: number) => {
-    const lo = Math.floor(p * 0.88).toLocaleString('vi-VN');
-    const hi = Math.floor(p * 1.12).toLocaleString('vi-VN');
-    return `${lo}đ – ${hi}đ`;
-  };
-
-  return top.map((g, i) => ({
-    id: `smart_${i + 1}_${Date.now()}`,
-    productName: g.name,
-    reason: buildReason(g),
-    estimatedPriceRange: fmt(g.price),
-    searchKeyword: g.searchKeyword || g.name.split(' – ')[0],
-    emoji: g.emoji,
-    category: g.category,
-  }));
-}
-
-function getMockSuggestions(answers: Partial<QuizAnswers>): GiftSuggestion[] {
-  const safe: QuizAnswers = {
-    occasion: answers.occasion || 'Sinh nhật',
-    relationship: answers.relationship || 'bạn thân',
-    gender: answers.gender || 'nữ',
-    ageRange: answers.ageRange || '19-25 tuổi',
-    zodiac: answers.zodiac || '',
-    personality: answers.personality || ['năng động'],
-    interests: answers.interests || ['làm đẹp'],
-    budget: answers.budget || '100.000đ – 300.000đ',
-  };
-  return generateSmartMockSuggestions(safe);
-}
-
+// ─── POST handler ─────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
-    if (!getRateLimit(ip)) {
-      return NextResponse.json({ error: 'Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau 1 giờ.' }, { status: 429 });
-    }
+    if (!getRateLimit(ip)) return NextResponse.json({ error: 'Quá nhiều yêu cầu, vui lòng thử lại sau 1 giờ.' }, { status: 429 });
 
     const answers: QuizAnswers = await request.json();
     if (!answers.occasion || !answers.relationship || !answers.gender) {
-      return NextResponse.json({ error: 'Vui lòng hoàn thành tất cả các câu hỏi bắt buộc.' }, { status: 400 });
+      return NextResponse.json({ error: 'Vui lòng hoàn thành tất cả câu hỏi bắt buộc.' }, { status: 400 });
     }
 
     let suggestions: GiftSuggestion[];
+
     if (process.env.ANTHROPIC_API_KEY) {
       try {
-        const { buildGiftPrompt, validateAIResponse } = await import('@/lib/ai/prompt-builder');
-        const raw = await callAnthropicAPI(buildGiftPrompt(answers));
-        suggestions = validateAIResponse({ suggestions: raw });
+        const zodiac = getZodiac(answers.zodiac || '');
+        const zodiacNote = zodiac
+          ? `Cung ${zodiac.label}: ${zodiac.keywords.join(', ')} — tính cách ${zodiac.giftPersonality}, màu may mắn ${zodiac.luckColor}.`
+          : 'Không có thông tin cung hoàng đạo.';
+        const prompt = `Bạn là chuyên gia tặng quà Việt Nam thông minh. Phân tích hồ sơ người nhận và gợi ý 9 quà tặng CHÍNH XÁC NHẤT.
+
+HỒ SƠ NGƯỜI NHẬN:
+- Dịp tặng: ${answers.occasion}
+- Mối quan hệ: ${answers.relationship}
+- Giới tính: ${answers.gender}
+- Độ tuổi: ${answers.ageRange}
+- Cung hoàng đạo: ${zodiacNote}
+- Tính cách: ${(answers.personality || []).join(', ')}
+- Sở thích: ${(answers.interests || []).join(', ')}
+- Ngân sách: ${answers.budget}
+
+YÊU CẦU QUAN TRỌNG:
+1. Giá PHẢI nằm trong ngân sách (${answers.budget}) — sai thì không chấp nhận
+2. Kết hợp cả quà vật chất lẫn trải nghiệm (vé concert, spa, du lịch, khóa học)
+3. Phân tích sâu cung hoàng đạo → tính cách → loại quà phù hợp
+4. Đề xuất quà đa dạng, không trùng lặp danh mục
+5. Lý do tặng quà phải thuyết phục, cá nhân hóa cao
+
+Trả về CHỈ JSON:
+{"suggestions":[{"productName":"...","reason":"lý do chi tiết 2-3 câu...","estimatedPriceRange":"XXXđ – YYYđ","searchKeyword":"từ khóa tìm Shopee","emoji":"🎁","category":"danh mục"}]}`;
+        const raw = await callAnthropicAPI(prompt);
+        suggestions = raw.length > 0 ? raw : generateSuggestions(answers);
       } catch {
-        await new Promise((r) => setTimeout(r, 800));
-        suggestions = getMockSuggestions(answers);
+        await new Promise(r => setTimeout(r, 800));
+        suggestions = generateSuggestions(answers);
       }
     } else {
-      await new Promise((r) => setTimeout(r, 1500));
-      suggestions = getMockSuggestions(answers);
+      await new Promise(r => setTimeout(r, 1500));
+      suggestions = generateSuggestions(answers);
     }
 
     return NextResponse.json({ suggestions });
   } catch (error) {
     console.error('suggest-gifts error:', error);
-    return NextResponse.json({ error: 'Oops! Có lỗi xảy ra khi gợi ý quà. Vui lòng thử lại.' }, { status: 500 });
+    return NextResponse.json({ error: 'Oops! Có lỗi xảy ra. Vui lòng thử lại.' }, { status: 500 });
   }
 }
