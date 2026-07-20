@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuizStore } from '@/lib/store/quizStore';
@@ -159,6 +159,22 @@ export default function ResultsPage() {
   const router = useRouter();
   const { suggestions, isLoadingAI, aiError, isComplete, selectGift, reset, answers } = useQuizStore();
   const [selectedGiftId, setSelectedGiftId] = useState<string | null>(null);
+  const [shareToast, setShareToast] = useState<'idle' | 'copied' | 'shared'>('idle');
+
+  const handleShare = useCallback(async () => {
+    const url = 'https://giftwise-lhsm.vercel.app/quiz';
+    const text = `Tôi vừa dùng GiftWise để tìm quà tặng bằng AI! Thử ngay → ${url}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'GiftWise — AI gợi ý quà tặng', text, url });
+        setShareToast('shared');
+      } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(text);
+      setShareToast('copied');
+    }
+    setTimeout(() => setShareToast('idle'), 2500);
+  }, []);
 
   useEffect(() => {
     if (!isComplete) {
@@ -306,17 +322,21 @@ export default function ResultsPage() {
                   ))}
                 </AnimatePresence>
               </div>
-              <div style={{ textAlign: 'center', paddingBottom: '2rem' }}>
+              <div style={{ textAlign: 'center', paddingBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                {/* Share button */}
+                <button
+                  onClick={handleShare}
+                  className="btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', padding: '0.7rem 1.75rem' }}
+                >
+                  {shareToast === 'copied' ? '✅ Đã sao chép link!' : shareToast === 'shared' ? '✅ Đã chia sẻ!' : '🔗 Chia sẻ kết quả'}
+                </button>
                 <button
                   onClick={() => reset()}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--color-text-light)',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    fontFamily: 'inherit',
+                    background: 'none', border: 'none',
+                    color: 'var(--color-text-light)', fontSize: '0.85rem',
+                    cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit',
                   }}
                 >
                   🔄 Làm lại quiz để thay đổi tiêu chí

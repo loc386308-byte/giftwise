@@ -4,6 +4,39 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 
+// FAQ structured data (rendered as JSON-LD script in JSX)
+const FAQ_JSONLD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'GiftWise hoạt động như thế nào?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Bạn trả lời 8 câu hỏi về dịp tặng, người nhận, cung hoàng đạo, tính cách, sở thích và ngân sách. AI sẽ phân tích và gợi ý 9 món quà phù hợp nhất kèm giá và nơi mua.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'GiftWise có miễn phí không?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Hoàn toàn miễn phí, không cần đăng ký tài khoản. Bạn chỉ mất khoảng 2 phút để hoàn thành quiz và nhận gợi ý.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'AI gợi ý quà có chính xác không?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Engine gợi ý của GiftWise phân tích kết hợp 8 yếu tố: cung hoàng đạo, tính cách, sở thích, tuổi, giới tính, mối quan hệ, dịp và ngân sách. Kết quả được cá nhân hóa cao và phù hợp với nhiều trường hợp thực tế.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'Tôi có thể mua quà ở đâu sau khi nhận gợi ý?',
+      acceptedAnswer: { '@type': 'Answer', text: 'GiftWise cung cấp 2 kênh mua: Online (Shopee, TikTok Shop) với lọc giá và đánh giá; và Offline với bản đồ cửa hàng gần vị trí GPS của bạn.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'GiftWise có hỗ trợ nhiều ngân sách không?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Có — GiftWise hỗ trợ 5 mức ngân sách từ dưới 100,000đ đến trên 1,000,000đ. Tất cả gợi ý đều được lọc chặt theo mức bạn chọn.' },
+    },
+  ],
+};
+
 const OCCASIONS = [
   { id: 'birthday', label: 'Sinh nhật', emoji: '🎂', color: '#FF6B9D' },
   { id: 'valentine', label: 'Valentine', emoji: '💝', color: '#EC4899' },
@@ -54,6 +87,7 @@ export default function HomePage() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSONLD) }} />
       <Header />
 
       <main style={{ paddingTop: '60px' }}>
@@ -118,7 +152,7 @@ export default function HomePage() {
             }}
           >
             <span>✨</span>
-            <span>Powered by Claude AI · 1,000+ quà đã gợi ý</span>
+            <span>Powered by Claude AI · Hoàn toàn miễn phí</span>
           </div>
 
           {/* Headline */}
@@ -548,6 +582,9 @@ export default function HomePage() {
             Made with ❤️ by{' '}
             <span className="gradient-text" style={{ fontWeight: 700 }}>GiftWise</span>
             {' '}· Powered by Claude AI
+          </p>
+          <p style={{ marginTop: '0.5rem' }}>
+            <Link href="/blog" style={{ color: 'var(--color-text-muted)', textDecoration: 'none', fontSize: '0.8rem' }}>📚 Blog ý tưởng quà tặng</Link>
           </p>
         </footer>
       </main>

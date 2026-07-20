@@ -685,8 +685,24 @@ function QuizInner() {
 }
 
 export default function QuizPage() {
+  const quizSkeleton = (
+    <div style={{ paddingTop: '60px', minHeight: '100dvh', background: 'var(--color-bg)' }}>
+      {/* Progress bar skeleton */}
+      <div style={{ height: '4px', background: 'var(--color-border-light)', position: 'fixed', top: '60px', left: 0, right: 0, zIndex: 99 }}>
+        <div style={{ width: '12%', height: '100%', background: 'var(--gradient-main)', borderRadius: '0 4px 4px 0' }} />
+      </div>
+      <div style={{ maxWidth: '540px', margin: '0 auto', padding: '3rem 1.5rem' }}>
+        <div className="skeleton" style={{ width: '60%', height: '14px', borderRadius: '8px', marginBottom: '0.5rem' }} />
+        <div className="skeleton" style={{ width: '40%', height: '28px', borderRadius: '8px', marginBottom: '2rem' }} />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="skeleton" style={{ width: '100%', height: '52px', borderRadius: '14px', marginBottom: '0.75rem' }} />
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={quizSkeleton}>
       <QuizInner />
     </Suspense>
   );
