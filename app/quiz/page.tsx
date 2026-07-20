@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQuizStore } from '@/lib/store/quizStore';
@@ -193,10 +193,12 @@ function QuizInner() {
   } = useQuizStore();
 
   // Pre-fill occasion from URL param
+  const [prefilled, setPrefilled] = useState(false);
   useEffect(() => {
     const occasionParam = searchParams.get('occasion');
     if (occasionParam && OCCASION_MAP[occasionParam] && !answers.occasion) {
       setAnswer('occasion', OCCASION_MAP[occasionParam]);
+      setPrefilled(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -549,6 +551,8 @@ function QuizInner() {
     }
   };
 
+  const isZodiacStep = currentStep === 4;
+
   return (
     <>
       <Header />
@@ -562,7 +566,7 @@ function QuizInner() {
           background: 'var(--color-bg)',
         }}
       >
-        {/* Progress Bar */}
+        {/* ── Progress Bar ───────────────────────────────────────── */}
         <div
           style={{
             position: 'fixed',
@@ -570,25 +574,44 @@ function QuizInner() {
             left: 0,
             right: 0,
             zIndex: 99,
-            padding: '0.75rem 1.5rem',
-            background: 'rgba(251,249,246,0.9)',
-            backdropFilter: 'blur(10px)',
+            padding: '0.625rem 1.5rem 0.5rem',
+            background: 'rgba(251,249,246,0.95)',
+            backdropFilter: 'blur(12px)',
+            borderBottom: '1px solid var(--color-border-light)',
           }}
         >
           <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-                Câu {currentStep + 1} / {TOTAL_STEPS}
-              </span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-accent-1)' }}>
-                {Math.round(progress)}%
+            {/* Step label row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    padding: '0.15rem 0.55rem',
+                    borderRadius: '999px',
+                    background: 'var(--gradient-main)',
+                    color: 'white',
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {currentStep + 1}/{TOTAL_STEPS}
+                </span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                  {STEP_TITLES[currentStep]}
+                </span>
+              </div>
+              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)' }}>
+                ~{Math.max(1, Math.ceil((TOTAL_STEPS - currentStep) * 0.3))} phút
               </span>
             </div>
-            <div className="progress-track">
+            {/* Progress track */}
+            <div className="progress-track" style={{ height: '6px' }}>
               <motion.div
                 className="progress-fill"
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.4, ease: 'easeOut' }}
+                style={{ height: '6px', borderRadius: '6px' }}
               />
             </div>
           </div>
@@ -601,10 +624,33 @@ function QuizInner() {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            padding: '6rem 1.5rem 2rem',
+            padding: '6.5rem 1.5rem 2rem',
           }}
         >
           <div style={{ maxWidth: '640px', margin: '0 auto', width: '100%' }}>
+            {/* Prefilled badge */}
+            {prefilled && currentStep === 0 && answers.occasion && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.3rem 0.75rem',
+                  borderRadius: '999px',
+                  background: 'linear-gradient(135deg,#d1fae5,#a7f3d0)',
+                  border: '1px solid #6ee7b7',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#065f46',
+                  marginBottom: '0.75rem',
+                }}
+              >
+                ✅ Đã điền sẵn từ trang chủ: {answers.occasion}
+              </motion.div>
+            )}
+
             <AnimatePresence mode="wait" custom={directionRef.current}>
               <motion.div
                 key={currentStep}
@@ -626,6 +672,27 @@ function QuizInner() {
                 >
                   {STEP_TITLES[currentStep]}
                 </h2>
+
+                {/* Optional badge for zodiac */}
+                {isZodiacStep && (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.2rem 0.65rem',
+                      borderRadius: '999px',
+                      background: 'rgba(168,85,247,0.08)',
+                      border: '1px solid rgba(168,85,247,0.2)',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      color: '#7c3aed',
+                      marginBottom: '1rem',
+                    }}
+                  >
+                    ✨ Không bắt buộc — AI sẽ gợi ý tốt hơn nếu có
+                  </div>
+                )}
 
                 {/* Step Content */}
                 {renderStep()}
@@ -650,33 +717,68 @@ function QuizInner() {
               maxWidth: '640px',
               margin: '0 auto',
               display: 'flex',
-              gap: '1rem',
-              justifyContent: currentStep === 0 ? 'flex-end' : 'space-between',
+              gap: '0.75rem',
+              flexDirection: 'column',
             }}
           >
-            {currentStep > 0 && (
-              <button
-                onClick={handlePrev}
-                className="btn-secondary"
-                style={{ flex: 1, maxWidth: '140px', padding: '0.875rem 1rem' }}
-              >
-                ← Quay lại
-              </button>
-            )}
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className="btn-primary"
+            <div
               style={{
-                flex: 2,
-                opacity: canProceed() ? 1 : 0.45,
-                cursor: canProceed() ? 'pointer' : 'not-allowed',
-                justifyContent: 'center',
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: currentStep === 0 ? 'flex-end' : 'space-between',
               }}
             >
-              {currentStep === TOTAL_STEPS - 1 ? '🎁 Xem gợi ý quà' : 'Tiếp theo →'}
-            </motion.button>
+              {currentStep > 0 && (
+                <button
+                  onClick={handlePrev}
+                  className="btn-secondary"
+                  style={{ flex: 1, maxWidth: '130px', padding: '0.875rem 1rem' }}
+                >
+                  ← Quay lại
+                </button>
+              )}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleNext}
+                disabled={!canProceed()}
+                className="btn-primary"
+                style={{
+                  flex: 2,
+                  opacity: canProceed() ? 1 : 0.45,
+                  cursor: canProceed() ? 'pointer' : 'not-allowed',
+                  justifyContent: 'center',
+                }}
+              >
+                {currentStep === TOTAL_STEPS - 1 ? '🎁 Xem gợi ý quà' : 'Tiếp theo →'}
+              </motion.button>
+            </div>
+
+            {/* Skip button — only on zodiac step */}
+            {isZodiacStep && (
+              <motion.button
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => {
+                  setAnswer('zodiac', 'skip');
+                  directionRef.current = 1;
+                  nextStep();
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-text-muted)',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  textDecoration: 'underline',
+                  padding: '0.25rem 0',
+                  textAlign: 'center',
+                }}
+              >
+                Bỏ qua câu này →
+              </motion.button>
+            )}
           </div>
         </div>
       </main>
