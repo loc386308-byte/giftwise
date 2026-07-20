@@ -230,7 +230,10 @@ function OnlineInner() {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/search-online?keyword=${encodeURIComponent(keyword)}`);
+        const res = await fetch(
+          `/api/search-online?keyword=${encodeURIComponent(keyword)}&gift=${encodeURIComponent(giftName)}`
+        );
+
         const data = await res.json();
         if (data.error) setError(data.error);
         else setResult(data);
