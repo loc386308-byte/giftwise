@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuizStore } from '@/lib/store/quizStore';
@@ -234,63 +234,11 @@ function LoadingSkeleton() {
   );
 }
 
-// ─── Toast states ─────────────────────────────────────────────────────────────
-type ShareState = 'idle' | 'saving' | 'copied' | 'shared' | 'error';
-
-// ─── Results page ─────────────────────────────────────────────────────────────
 export default function ResultsPage() {
   const router = useRouter();
   const { suggestions, isLoadingAI, aiError, isComplete, selectGift, reset, answers } =
     useQuizStore();
   const [selectedGiftId, setSelectedGiftId] = useState<string | null>(null);
-  const [shareState, setShareState] = useState<ShareState>('idle');
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-
-  // Auto-save once suggestions are ready
-  const hasSaved = useRef(false);
-  useEffect(() => {
-    if (!isComplete || isLoadingAI || suggestions.length === 0 || hasSaved.current) return;
-    hasSaved.current = true;
-
-    (async () => {
-      try {
-        const res = await fetch('/api/save-result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ answers, suggestions }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setShareUrl(data.shareUrl);
-        }
-      } catch {
-        // silent — sharing still works via generic link
-      }
-    })();
-  }, [isComplete, isLoadingAI, suggestions, answers]);
-
-  const handleShare = useCallback(async () => {
-    const url = shareUrl ?? 'https://giftwise-lhsm.vercel.app/quiz';
-    const text = shareUrl
-      ? `AI gợi ý quà tặng cá nhân hóa cho tôi — xem tại đây! 🎁`
-      : `Tôi vừa dùng GiftWise để tìm quà tặng bằng AI! Thử ngay →`;
-
-    setShareState('saving');
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'GiftWise — AI gợi ý quà tặng', text, url });
-        setShareState('shared');
-      } catch {
-        setShareState('idle');
-        return;
-      }
-    } else {
-      await navigator.clipboard.writeText(`${text} ${url}`);
-      setShareState('copied');
-    }
-    setTimeout(() => setShareState('idle'), 3000);
-  }, [shareUrl]);
 
   useEffect(() => {
     if (!isComplete) router.replace('/quiz');
@@ -307,18 +255,7 @@ export default function ResultsPage() {
 
   if (!isComplete) return null;
 
-  const shareBtnLabel =
-    shareState === 'saving'
-      ? '⏳ Đang tạo link...'
-      : shareState === 'copied'
-      ? '✅ Đã sao chép link!'
-      : shareState === 'shared'
-      ? '✅ Đã chia sẻ!'
-      : shareState === 'error'
-      ? '⚠️ Thử lại'
-      : shareUrl
-      ? '🔗 Chia sẻ kết quả cá nhân'
-      : '🔗 Chia sẻ kết quả';
+
 
   return (
     <>
@@ -503,64 +440,6 @@ export default function ResultsPage() {
                   gap: '0.75rem',
                 }}
               >
-                {/* Share section */}
-                <div
-                  style={{
-                    background: 'linear-gradient(135deg,#fdf4ff,#ede9fe)',
-                    border: '1px solid #e9d5ff',
-                    borderRadius: '20px',
-                    padding: '1.25rem 1.75rem',
-                    maxWidth: '420px',
-                    width: '100%',
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: '0.82rem',
-                      color: '#6b7280',
-                      marginBottom: '0.875rem',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    📤 Chia sẻ kết quả để bạn bè hoặc người thân biết bạn muốn nhận quà gì!
-                  </p>
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    onClick={handleShare}
-                    disabled={shareState === 'saving'}
-                    className="btn-primary"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      fontSize: '0.9rem',
-                      padding: '0.7rem 1.75rem',
-                      width: '100%',
-                      justifyContent: 'center',
-                      opacity: shareState === 'saving' ? 0.7 : 1,
-                    }}
-                  >
-                    {shareBtnLabel}
-                  </motion.button>
-
-                  {/* Show the link for easy copying */}
-                  {shareUrl && shareState === 'idle' && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      style={{
-                        fontSize: '0.72rem',
-                        color: '#9ca3af',
-                        marginTop: '0.5rem',
-                        wordBreak: 'break-all',
-                        fontFamily: 'monospace',
-                      }}
-                    >
-                      {shareUrl}
-                    </motion.p>
-                  )}
-                </div>
-
                 <button
                   onClick={() => reset()}
                   style={{

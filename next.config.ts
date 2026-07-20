@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'cdn.shopify.com' },
-      { protocol: 'https', hostname: 'down-vn.img.susercontent.com' },
     ],
     formats: ['image/avif', 'image/webp'],
   },
