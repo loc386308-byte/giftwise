@@ -59,7 +59,12 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
           alt={product.name}
           fill
           unoptimized
-          onError={() => setImgSrc('https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&h=600&fit=crop&q=90')}
+          onError={() => {
+            const fallback = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&h=600&fit=crop&q=90';
+            if (imgSrc !== fallback) {
+              setImgSrc(fallback);
+            }
+          }}
           style={{ objectFit: 'cover', transition: 'transform 0.4s ease' }}
           onMouseEnter={(e) => { (e.target as HTMLImageElement).style.transform = 'scale(1.08)'; }}
           onMouseLeave={(e) => { (e.target as HTMLImageElement).style.transform = 'scale(1)'; }}

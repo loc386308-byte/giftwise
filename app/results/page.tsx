@@ -448,7 +448,24 @@ export default function ResultsPage() {
         <div style={{ padding: '2rem 1.5rem', maxWidth: '1100px', margin: '0 auto' }}>
           {isLoadingAI ? (
             <LoadingSkeleton />
-          ) : aiError ? null : suggestions.length > 0 ? (
+          ) : aiError || suggestions.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem 1.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '24px', border: '1px solid rgba(201,187,232,0.2)' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>😿</div>
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--cream)', marginBottom: '0.5rem' }}>
+                {aiError || 'Chưa tìm thấy gợi ý phù hợp.'}
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--lavender-light)', marginBottom: '1.5rem' }}>
+                Vui lòng thử lại hoặc thay đổi tiêu chí chọn quà.
+              </p>
+              <button
+                onClick={() => router.push('/quiz')}
+                className="btn-primary"
+                style={{ padding: '0.75rem 1.5rem', fontSize: '0.9rem' }}
+              >
+                🔄 Thay đổi tiêu chí Quiz
+              </button>
+            </div>
+          ) : (
             <>
               <div
                 style={{
@@ -504,7 +521,7 @@ export default function ResultsPage() {
                 </button>
               </div>
             </>
-          ) : null}
+          )}
         </div>
       </main>
 
