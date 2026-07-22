@@ -221,7 +221,8 @@ export class AIService {
             },
             body: JSON.stringify({
               model: 'claude-3-5-haiku-20241022',
-              max_tokens: 1500, // optimized token count
+              max_tokens: 1500,
+              temperature: 0.75,
               messages: [{ role: 'user', content: prompt }],
             }),
           },
@@ -259,7 +260,7 @@ export class AIService {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 1500 },
+              generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 1500, temperature: 0.75 },
             }),
           },
           8000,
@@ -394,24 +395,52 @@ Trả về CHỈ JSON theo định dạng exact:
   }
 
   private static buildSuggestPrompt(answers: QuizAnswers): string {
-    return `Bạn là chuyên gia tặng quà Việt Nam hàng đầu. Phân tích hồ sơ người nhận và gợi ý 9 quà tặng CHÍNH XÁC NHẤT.
+    return `Bạn là một Chuyên Gia Tư Vấn Quà Tặng Cá Nhân Hóa (Gift Advisor) tại Việt Nam với 10 năm kinh nghiệm.
+Nhiệm vụ của bạn là phân tích sâu hồ sơ người nhận dựa trên 8 tiêu chí khảo sát và đề xuất danh sách 9 MÓN QUÀ VẬT THỂ VƯỢT TRỘI, ĐA DẠNG & THUYẾT PHỤC NHẤT.
 
-HỒ SƠ NGƯỜI NHẬN:
-- Dịp tặng: ${answers.occasion}
-- Mối quan hệ: ${answers.relationship}
-- Giới tính: ${answers.gender}
-- Độ tuổi: ${answers.ageRange}
-- Cung hoàng đạo: ${answers.zodiac || 'Không rõ'}
-- Tính cách: ${(answers.personality || []).join(', ')}
-- Sở thích: ${(answers.interests || []).join(', ')}
-- Ngân sách: ${answers.budget}
+============================================================
+🎯 HỒ SƠ 8 TIÊU CHÍ NGƯỜI NHẬN QUÀ:
+1. Dịp tặng quà: ${answers.occasion} (Định hướng không khí & tính chất món quà)
+2. Mối quan hệ: ${answers.relationship} (Quyết định mức độ thân mật, tính riêng tư hay sự lịch thiệp)
+3. Giới tính người nhận: ${answers.gender} (Bối cảnh phong cách & thẩm mỹ)
+4. Nhóm độ tuổi: ${answers.ageRange} (Định hình xu hướng tiêu dùng & tính ứng dụng)
+5. Cung hoàng đạo: ${answers.zodiac || 'Chưa rõ'} (Tính cách chiêm tinh & yếu tố may mắn/thẩm mỹ)
+6. Đặc điểm tính cách: ${(answers.personality || []).join(', ') || 'Chưa chọn'} (Phong cách sống & sở thích cá nhân)
+7. Lĩnh vực sở thích: ${(answers.interests || []).join(', ') || 'Chưa chọn'} (Đam mê & hoạt động thường nhật)
+8. Ngân sách dự kiến: ${answers.budget} (Ràng buộc khoảng giá thực tế)
 
-YÊU CẦU QUAN TRỌNG:
-1. Mức giá ước tính PHẢI nằm trong dải ngân sách ${answers.budget}.
-2. CHỈ gợi ý các sản phẩm quà tặng VẬT THỂ THỰC TẾ (đồ dùng, phụ kiện, mỹ phẩm, công nghệ, thời trang, trang sức, đồ decor, sách...). TUYỆT ĐỐI KHÔNG gợi ý các loại vé (vé xem phim, vé concert, vé xem ca nhạc...) hoặc voucher (voucher spa, voucher ăn uống, thẻ nạp, gift card...).
-3. Lý do gợi ý cá nhân hóa sâu sắc (2-3 câu thuyết phục dựa vào tính cách/sở thích).
-4. Trả về CHỈ JSON theo định dạng sau (không có Markdown hay chữ ngoài JSON):
+============================================================
+⚠️ NGUYÊN TẮC ĐA DẠNG & CHÍNH XÁC BẮT BUỘC (STRICT RULES):
+1. GIÁ CẢ: Tất cả 9 gợi ý PHẢI có mức giá thực tế nằm đúng dải ngân sách "${answers.budget}". Phân bổ trải đều từ dải giá thấp đến dải giá cao nhất trong khoảng ngân sách.
+2. ĐA DẠNG DANH MỤC: 9 món quà PHẢI thuộc ít nhất 5–6 danh mục KHÁC NHAU (ví dụ: Thời trang/Phụ kiện, Công nghệ, Trang sức, Làm đẹp/Skincare, Decor/Phòng ngủ, Sách/Sổ tay, Gia dụng/Bếp...). KHÔNG LẶP LẠI quá 2 món trong cùng 1 danh mục.
+3. CHỈ MÓN QUÀ VẬT THỂ: Tuyệt đối KHÔNG gợi ý các loại vé (vé phim, concert...) hoặc voucher/giftcard.
+4. LÝ DO CÁ NHÂN HÓA (REASON): Mỗi món quà phải có lý do chọn 2-3 câu thuyết phục, giải thích ĐÚNG TẠI SAO món này hợp với [Tính cách] + [Sở thích] + [Mối quan hệ] của người nhận.
 
-{"suggestions":[{"productName":"...","reason":"...","estimatedPriceRange":"XXXđ – YYYđ","searchKeyword":"từ khóa tìm Shopee","emoji":"🎁","category":"danh mục"}]}`;
+============================================================
+📌 VÍ DỤ MẪU KẾT QUẢ ĐẠT CHUẨN (FEW-SHOT EXAMPLE):
+{
+  "suggestions": [
+    {
+      "productName": "Son Kem Lì Romand Zero Velvet Tint #25 Mauve Beach",
+      "category": "Son môi & Trang điểm",
+      "estimatedPriceRange": "150.000đ – 190.000đ",
+      "reason": "Tông màu hồng đất chuẩn Hàn Quốc hợp với phong cách nhẹ nhàng của bạn gái. Chất son mịn lì không khô môi, thích hợp đeo đi làm lẫn đi chơi hàng ngày.",
+      "searchKeyword": "son romand zero velvet tint 25",
+      "emoji": "💄"
+    },
+    {
+      "productName": "Loa Bluetooth JBL Flip 6 Chống Nước IP67",
+      "category": "Công nghệ & Âm thanh",
+      "estimatedPriceRange": "1.800.000đ – 2.100.000đ",
+      "reason": "Âm bass mạnh mẽ đáp ứng đúng sở thích nghe nhạc năng động của bạn thân. Thiết kế chống nước IP67 bền bỉ cho các chuyến du lịch hay hoạt động ngoài trời.",
+      "searchKeyword": "loa jbl flip 6 chính hãng",
+      "emoji": "🔊"
+    }
+  ]
+}
+
+============================================================
+CHỈ TRẢ VỀ JSON HỢP LỆ THEO ĐÚNG CẤU TRÚC TRÊN (KHÔNG VIẾT CHỮ NGOÀI JSON):
+{"suggestions":[{"productName":"...","category":"...","estimatedPriceRange":"...","reason":"...","searchKeyword":"...","emoji":"..."}]}`;
   }
 }
