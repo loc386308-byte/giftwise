@@ -389,10 +389,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Quá nhiều yêu cầu, vui lòng thử lại sau 1 giờ.' }, { status: 429 });
     }
 
-    const answers: QuizAnswers = await request.json();
-    if (!answers.occasion || !answers.relationship || !answers.gender) {
-      return NextResponse.json({ error: 'Vui lòng hoàn thành tất cả câu hỏi bắt buộc.' }, { status: 400 });
-    }
+    const rawAnswers = await request.json();
+    const answers: QuizAnswers = {
+      occasion: rawAnswers.occasion || 'Sinh nhật 🎂',
+      relationship: rawAnswers.relationship || 'Bạn bè 🤝',
+      gender: rawAnswers.gender || 'Khác / Không tiết lộ',
+      ageRange: rawAnswers.ageRange || '19-25 tuổi',
+      zodiac: rawAnswers.zodiac || '',
+      personality: Array.isArray(rawAnswers.personality) ? rawAnswers.personality : [],
+      interests: Array.isArray(rawAnswers.interests) ? rawAnswers.interests : [],
+      budget: rawAnswers.budget || '300.000đ - 500.000đ',
+      customDescription: rawAnswers.customDescription || '',
+    };
 
     // Call AIService (handles cache, Claude/Gemini AI, retries, timeout, JSON sanitizing)
     const { suggestions: aiResult, source } = await AIService.getGiftSuggestions(answers);

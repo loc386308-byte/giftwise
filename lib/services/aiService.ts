@@ -324,8 +324,8 @@ export class AIService {
       return { products: cached, source: 'cache' };
     }
 
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const anthropicKey = SmartKeyManager.getActiveKey('anthropic');
+    const geminiKey = SmartKeyManager.getActiveKey('gemini');
 
     const prompt = `Bạn là chuyên gia gợi ý sản phẩm thương mại điện tử Việt Nam.
 Người dùng muốn tìm mua: "${giftName || keyword}"
@@ -344,6 +344,7 @@ Trả về CHỈ JSON theo định dạng exact:
     if (anthropicKey) {
       try {
         const startTime = Date.now();
+        const config = SmartKeyManager.getModelConfig('anthropic', 'complex');
         const response = await fetchWithTimeoutAndRetry(
           'https://api.anthropic.com/v1/messages',
           {
@@ -354,12 +355,12 @@ Trả về CHỈ JSON theo định dạng exact:
               'anthropic-version': '2023-06-01',
             },
             body: JSON.stringify({
-              model: 'claude-3-5-haiku-20241022',
+              model: config.model,
               max_tokens: 1200,
               messages: [{ role: 'user', content: prompt }],
             }),
           },
-          8000,
+          config.timeoutMs,
           2
         );
 
@@ -370,13 +371,13 @@ Trả về CHỈ JSON theo định dạng exact:
           const parsed = JSON.parse(match[0]);
           const products = sanitizeProducts(parsed.products);
           if (products.length > 0) {
-            console.log(`[AIService] Claude search-online success in ${Date.now() - startTime}ms`);
+            SmartKeyManager.reportSuccess('anthropic', anthropicKey, Date.now() - startTime);
             setCached(cacheKey, products);
             return { products, source: 'ai' };
           }
         }
-      } catch (err) {
-        console.warn('[AIService] Claude search-online failed:', err);
+      } catch (err: unknown) {
+        SmartKeyManager.reportFailure('anthropic', anthropicKey, undefined, String(err));
       }
     }
 
@@ -384,8 +385,9 @@ Trả về CHỈ JSON theo định dạng exact:
     if (geminiKey) {
       try {
         const startTime = Date.now();
+        const config = SmartKeyManager.getModelConfig('gemini', 'complex');
         const response = await fetchWithTimeoutAndRetry(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${geminiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -394,7 +396,7 @@ Trả về CHỈ JSON theo định dạng exact:
               generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 1200 },
             }),
           },
-          8000,
+          config.timeoutMs,
           2
         );
 
@@ -405,13 +407,13 @@ Trả về CHỈ JSON theo định dạng exact:
           const parsed = JSON.parse(match[0]);
           const products = sanitizeProducts(parsed.products);
           if (products.length > 0) {
-            console.log(`[AIService] Gemini search-online success in ${Date.now() - startTime}ms`);
+            SmartKeyManager.reportSuccess('gemini', geminiKey, Date.now() - startTime);
             setCached(cacheKey, products);
             return { products, source: 'ai' };
           }
         }
-      } catch (err) {
-        console.warn('[AIService] Gemini search-online failed:', err);
+      } catch (err: unknown) {
+        SmartKeyManager.reportFailure('gemini', geminiKey, undefined, String(err));
       }
     }
 
