@@ -156,19 +156,40 @@ export function resolveProductImage(productName: string, rawUrl?: string): strin
   return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&h=600&fit=crop&q=90';
 }
 
+export function parseVndPrice(raw: unknown, defaultPrice = 250000): number {
+  if (typeof raw === 'number' && !isNaN(raw)) {
+    if (raw <= 0) return defaultPrice;
+    // AI returned price in thousands (e.g. 150 -> 150,000đ, 2490 -> 2,490,000đ)
+    if (raw < 1000) return Math.round(raw * 1000);
+    return Math.round(raw);
+  }
+  if (typeof raw === 'string') {
+    let clean = raw.toLowerCase().trim();
+    const isK = clean.endsWith('k');
+    clean = clean.replace(/[^0-9]/g, '');
+    let num = parseInt(clean, 10);
+    if (isNaN(num) || num <= 0) return defaultPrice;
+    if (isK || num < 1000) num *= 1000;
+    return num;
+  }
+  return defaultPrice;
+}
+
 export function sanitizeProducts(raw: unknown[]): Product[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
     .map((item, index) => {
       const name = String(item.name || 'Sản phẩm quà tặng').trim();
-      const price = typeof item.price === 'number' && item.price > 0 ? item.price : 250000;
-      const originalPrice = typeof item.originalPrice === 'number' ? item.originalPrice : Math.round(price * 1.25);
-      const rating = typeof item.rating === 'number' && item.rating > 0 ? item.rating : 4.8;
+      const price = parseVndPrice(item.price, 250000);
+      const parsedOriginal = parseVndPrice(item.originalPrice, 0);
+      const originalPrice = parsedOriginal > price ? parsedOriginal : Math.round(price * 1.25);
+      const rating = typeof item.rating === 'number' && item.rating > 0 ? Math.min(5, Math.max(4.0, item.rating)) : 4.8;
       const reviewCount = typeof item.reviewCount === 'number' ? item.reviewCount : 1200;
       const sold = typeof item.sold === 'number' ? item.sold : 3500;
       const source = item.source === 'tiktok' ? 'tiktok' : 'shopee';
       const imageUrl = resolveProductImage(name, typeof item.imageUrl === 'string' ? item.imageUrl : undefined);
+      const discount = Math.max(5, Math.min(75, Math.round(((originalPrice - price) / originalPrice) * 100)));
 
       return {
         id: `ai_prod_${index}_${Date.now()}`,
@@ -181,7 +202,7 @@ export function sanitizeProducts(raw: unknown[]): Product[] {
         sold,
         source,
         affiliateLink: String(item.affiliateLink || `https://shopee.vn/search?keyword=${encodeURIComponent(name)}`).trim(),
-        discount: Math.round(((originalPrice - price) / originalPrice) * 100),
+        discount,
         badge: item.badge ? String(item.badge) : undefined,
         sizes: Array.isArray(item.sizes) ? item.sizes.map(String) : undefined,
       };
@@ -311,7 +332,7 @@ Hãy tạo 6 SẢN PHẨM CỤ THỂ ĐÚNG CHÍNH XÁC VỚI "${giftName || key
 Yêu cầu:
 1. Sản phẩm phải ĐÚNG loại "${giftName || keyword}" — không đổi sang loại khác.
 2. Tên sản phẩm rõ ràng có thương hiệu + dòng + thông số.
-3. Giá cả hợp lý thực tế thị trường VNĐ.
+3. Giá cả (price, originalPrice) PHẢI LÀ SỐ NGUYÊN ĐẦY ĐỦ TÍNH BẰNG VNĐ (ví dụ: 250000 hoặc 1890000, TUYỆT ĐỐI KHÔNG ghi tắt 250 hay 150k).
 
 Trả về CHỈ JSON theo định dạng exact:
 {"products":[{"id":"p1","name":"...","price":250000,"originalPrice":320000,"rating":4.9,"reviewCount":1500,"sold":4200,"source":"shopee","affiliateLink":"https://shopee.vn/search?keyword=...","discount":21,"badge":"Bán chạy"}]}`;
