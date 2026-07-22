@@ -81,6 +81,8 @@ const webAppJsonLd = {
   ],
 };
 
+import AuthModal from '@/components/AuthModal';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
@@ -124,8 +126,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </span>
         ))}
         {children}
+        <AuthModal />
       </body>
-
     </html>
   );
 }

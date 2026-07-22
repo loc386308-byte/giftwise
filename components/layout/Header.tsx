@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/lib/store/authStore';
 
 export default function Header() {
   const pathname = usePathname();
   const isHome = pathname === '/';
   const isJournal = pathname === '/journal';
+  const { user, openAuthModal, logout } = useAuthStore();
 
   return (
     <header
@@ -67,23 +69,72 @@ export default function Header() {
             color: isJournal ? 'var(--lavender-light)' : 'var(--color-text-muted)',
             transition: 'all 0.18s ease',
           }}
-          onMouseEnter={(e) => {
-            if (!isJournal) {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-              e.currentTarget.style.color = 'var(--lavender-light)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isJournal) {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-              e.currentTarget.style.color = 'var(--color-text-muted)';
-            }
-          }}
         >
           <span>📖</span>
           <span style={{ display: 'none' }} className="nav-label">Nhật kí</span>
           <span className="nav-label-mobile">Nhật kí</span>
         </Link>
+
+        {/* Auth User Profile / Login button */}
+        {user ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.3rem 0.75rem',
+                borderRadius: '999px',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(201,187,232,0.25)',
+                color: 'white',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+              }}
+            >
+              <span>👤</span>
+              <span>{user.name}</span>
+            </div>
+            <button
+              onClick={logout}
+              title="Đăng xuất"
+              style={{
+                background: 'rgba(239,68,68,0.15)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                color: '#fca5a5',
+                padding: '0.3rem 0.6rem',
+                borderRadius: '999px',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                fontWeight: 700,
+              }}
+            >
+              Thoát
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={openAuthModal}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.35rem 0.875rem',
+              borderRadius: '999px',
+              fontFamily: "'Nunito', sans-serif",
+              fontSize: 'var(--text-sm)',
+              fontWeight: 700,
+              border: '1px solid rgba(201,187,232,0.3)',
+              background: 'rgba(201,187,232,0.12)',
+              color: 'var(--lavender-light)',
+              cursor: 'pointer',
+              transition: 'all 0.18s ease',
+            }}
+          >
+            <span>🔑</span>
+            <span>Đăng nhập</span>
+          </button>
+        )}
 
         {/* Back / Start CTA */}
         {!isHome ? (

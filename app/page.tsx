@@ -28,7 +28,7 @@ const OCCASIONS = [
 
 const STEPS = [
   { emoji: '💬', label: 'Trả lời 8 câu ngắn', sub: 'Về người nhận, dịp, ngân sách...' },
-  { emoji: '🤖', label: 'AI phân tích & gợi ý', sub: 'Claude AI chọn 6 món hoàn hảo nhất' },
+  { emoji: '🤖', label: 'AI phân tích & gợi ý', sub: 'AI thông minh chọn 9 món hoàn hảo nhất' },
   { emoji: '🛍️', label: 'Tìm nơi mua ngay', sub: 'Online Shopee/TikTok hoặc cửa hàng gần bạn' },
 ];
 
@@ -121,7 +121,7 @@ export default function HomePage() {
             }}
           >
             <span>✦</span>
-            <span>Powered by Claude AI · Hoàn toàn miễn phí</span>
+            <span>Trí tuệ nhân tạo AI · Hoàn toàn miễn phí</span>
             <span>✦</span>
           </div>
 
@@ -530,7 +530,6 @@ export default function HomePage() {
             >
               GiftWise
             </span>
-            {' '}· Powered by Claude AI
           </p>
           <p>
             <Link href="/blog" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>

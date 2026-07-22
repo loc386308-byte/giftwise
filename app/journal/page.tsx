@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/layout/Header';
 import { useJournalStore } from '@/lib/store/journalStore';
+import { useAuthStore } from '@/lib/store/authStore';
 import { Person, GiftRecord } from '@/types/journal';
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -661,6 +662,7 @@ function PersonDetail({
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function JournalPage() {
   const { people, addPerson, updatePerson, deletePerson } = useJournalStore();
+  const { user, openAuthModal } = useAuthStore();
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -751,6 +753,44 @@ export default function JournalPage() {
         </div>
 
         <div className="container-max" style={{ padding: '0 1.5rem 4rem' }}>
+          {/* User Auth Sync Banner */}
+          <div
+            style={{
+              background: user ? 'rgba(16,185,129,0.12)' : 'rgba(212,168,232,0.12)',
+              border: user ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(212,168,232,0.3)',
+              borderRadius: '20px',
+              padding: '1rem 1.5rem',
+              marginBottom: '2rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.75rem' }}>{user ? '🟢' : '🔒'}</span>
+              <div>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: user ? '#a7f3d0' : 'var(--lavender-light)' }}>
+                  {user ? `Đã lưu tài khoản: ${user.name}` : 'Lưu trữ nhật kí an toàn'}
+                </p>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  {user
+                    ? `Dữ liệu nhật kí của ${user.email} đang được lưu giữ bền vững trên thiết bị này.`
+                    : 'Đăng nhập để bảo vệ thông tin sở thích người thân & lịch sử tặng quà.'}
+                </p>
+              </div>
+            </div>
+            {!user && (
+              <button
+                onClick={openAuthModal}
+                className="btn-primary"
+                style={{ fontSize: '0.82rem', padding: '0.5rem 1.25rem' }}
+              >
+                🔑 Đăng nhập / Tạo tài khoản
+              </button>
+            )}
+          </div>
 
           {/* Upcoming birthdays */}
           {upcomingBirthdays.length > 0 && (
