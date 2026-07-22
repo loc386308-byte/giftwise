@@ -32,6 +32,7 @@ function StarRating({ rating }: { rating: number }) {
 function ProductCard({ product, index }: { product: Product; index: number }) {
   const isShopee = product.source === 'shopee';
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [imgSrc, setImgSrc] = useState<string>(product.imageUrl);
   const isFashion = product.sizes && product.sizes.length > 0;
 
   // Badge color logic
@@ -54,9 +55,11 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
       {/* Image */}
       <div style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
         <Image
-          src={product.imageUrl}
+          src={imgSrc}
           alt={product.name}
           fill
+          unoptimized
+          onError={() => setImgSrc('https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&h=600&fit=crop&q=90')}
           style={{ objectFit: 'cover', transition: 'transform 0.4s ease' }}
           onMouseEnter={(e) => { (e.target as HTMLImageElement).style.transform = 'scale(1.08)'; }}
           onMouseLeave={(e) => { (e.target as HTMLImageElement).style.transform = 'scale(1)'; }}
