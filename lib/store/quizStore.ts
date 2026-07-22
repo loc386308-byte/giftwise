@@ -44,7 +44,7 @@ export const useQuizStore = create<QuizStore>((set) => ({
   setStep: (step) => set({ currentStep: step }),
 
   nextStep: () => set((state) => ({
-    currentStep: Math.min(state.currentStep + 1, 7),
+    currentStep: Math.min(state.currentStep + 1, 8),
   })),
 
   prevStep: () => set((state) => ({
