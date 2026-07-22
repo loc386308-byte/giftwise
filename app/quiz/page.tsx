@@ -199,14 +199,39 @@ function QuizInner() {
     setLoadingAI, setSuggestions, setAIError,
   } = useQuizStore();
 
-  // Pre-fill occasion from URL param
-  const [prefilled, setPrefilled] = useState(false);
+  // Pre-fill from URL params (occasion from homepage, + relationship/gender/ageRange/zodiac from Journal)
+  const [prefilled, setPrefilled] = useState<string[]>([]);
+  const [prefilledPerson, setPrefilledPerson] = useState('');
   useEffect(() => {
+    const filled: string[] = [];
     const occasionParam = searchParams.get('occasion');
     if (occasionParam && OCCASION_MAP[occasionParam] && !answers.occasion) {
       setAnswer('occasion', OCCASION_MAP[occasionParam]);
-      setPrefilled(true);
+      filled.push('dịp');
     }
+    const relationshipParam = searchParams.get('relationship');
+    if (relationshipParam && !answers.relationship) {
+      setAnswer('relationship', relationshipParam);
+      filled.push('mối quan hệ');
+    }
+    const genderParam = searchParams.get('gender') as 'nữ' | 'nam' | 'khác' | null;
+    if (genderParam && !answers.gender) {
+      setAnswer('gender', genderParam);
+      filled.push('giới tính');
+    }
+    const ageParam = searchParams.get('ageRange');
+    if (ageParam && !answers.ageRange) {
+      setAnswer('ageRange', ageParam);
+      filled.push('độ tuổi');
+    }
+    const zodiacParam = searchParams.get('zodiac');
+    if (zodiacParam && !answers.zodiac) {
+      setAnswer('zodiac', zodiacParam);
+      filled.push('cung hoàng đạo');
+    }
+    const personParam = searchParams.get('person');
+    if (personParam) setPrefilledPerson(personParam);
+    if (filled.length > 0) setPrefilled(filled);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -638,7 +663,7 @@ function QuizInner() {
         >
           <div style={{ maxWidth: '640px', margin: '0 auto', width: '100%' }}>
             {/* Prefilled badge */}
-            {prefilled && currentStep === 0 && answers.occasion && (
+            {prefilled.length > 0 && currentStep === 0 && (
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -646,17 +671,18 @@ function QuizInner() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.4rem',
-                  padding: '0.3rem 0.75rem',
+                  padding: '0.35rem 0.875rem',
                   borderRadius: '999px',
-                  background: 'linear-gradient(135deg,#d1fae5,#a7f3d0)',
-                  border: '1px solid #6ee7b7',
-                  fontSize: '0.75rem',
+                  background: 'rgba(212,168,232,0.18)',
+                  border: '1px solid rgba(212,168,232,0.4)',
+                  fontSize: 'var(--text-xs)',
+                  fontFamily: "'Nunito',sans-serif",
                   fontWeight: 700,
-                  color: '#065f46',
-                  marginBottom: '0.75rem',
+                  color: 'var(--lavender-light)',
+                  marginBottom: '0.875rem',
                 }}
               >
-                ✅ Đã điền sẵn từ trang chủ: {answers.occasion}
+                ✨ {prefilledPerson ? `Đã load từ sổ nhật kí: ${prefilledPerson}` : `Đã điền sẵn: ${prefilled.join(', ')}`}
               </motion.div>
             )}
 

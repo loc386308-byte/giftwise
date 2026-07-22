@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuizStore } from '@/lib/store/quizStore';
 import { GiftSuggestion } from '@/types';
 import Header from '@/components/layout/Header';
+import GiftRoulette from '@/components/GiftRoulette';
 
 // ─── AI Insight expanded card ─────────────────────────────────────────────────
 function GiftCard({
@@ -451,11 +452,15 @@ export default function ResultsPage() {
                 </AnimatePresence>
               </div>
 
+              {/* Gift Roulette */}
+              <GiftRoulette gifts={suggestions} onSelect={handleBuy} />
+
               {/* Action bar */}
               <div
                 style={{
                   textAlign: 'center',
-                  paddingBottom: '2rem',
+                  paddingTop: '1rem',
+                  paddingBottom: '2.5rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',

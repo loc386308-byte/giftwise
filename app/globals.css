@@ -646,3 +646,35 @@ main, header, footer, section, .page-content {
   position: relative;
   z-index: 1;
 }
+
+/* ── Roulette glow ring ── */
+@keyframes pulse-glow-ring {
+  0%, 100% { opacity: 0.4; transform: scale(1);    box-shadow: 0 0 0 0 rgba(212,168,232,0); }
+  50%       { opacity: 0.9; transform: scale(1.03); box-shadow: 0 0 30px 8px rgba(212,168,232,0.25); }
+}
+
+/* ── Journal scrollbar ── */
+.journal-scroll::-webkit-scrollbar { width: 6px; }
+.journal-scroll::-webkit-scrollbar-track { background: transparent; }
+.journal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(201,187,232,0.25);
+  border-radius: 3px;
+}
+
+/* ── Header nav label — show on ≥ 480px ── */
+.nav-label-mobile { display: block; }
+@media (max-width: 479px) {
+  .nav-label-mobile { display: none; }
+}
+
+/* ── Input dark autofill override ── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px rgba(30,26,60,0.97) inset !important;
+  -webkit-text-fill-color: #f0eaff !important;
+  caret-color: #f0eaff;
+}
+
+/* ── Select option dark ── */
+option { background-color: #1e1a3c; color: #f0eaff; }
