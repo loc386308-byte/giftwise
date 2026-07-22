@@ -7,6 +7,8 @@ import { useQuizStore } from '@/lib/store/quizStore';
 import { GiftSuggestion } from '@/types';
 import Header from '@/components/layout/Header';
 import GiftRoulette from '@/components/GiftRoulette';
+import GiftFeedback from '@/components/GiftFeedback';
+import GreetingCardModal from '@/components/GreetingCardModal';
 
 // ─── AI Insight expanded card ─────────────────────────────────────────────────
 function GiftCard({
@@ -14,13 +16,16 @@ function GiftCard({
   index,
   isSelected,
   onBuy,
+  onOpenCard,
 }: {
   gift: GiftSuggestion;
   index: number;
   isSelected: boolean;
   onBuy: (gift: GiftSuggestion, dest: 'online' | 'offline') => void;
+  onOpenCard: (gift: GiftSuggestion) => void;
 }) {
   const [insightOpen, setInsightOpen] = useState(false);
+  const { answers } = useQuizStore();
 
   return (
     <motion.div
@@ -93,41 +98,51 @@ function GiftCard({
         💰 {gift.estimatedPriceRange}
       </p>
 
-      {/* AI Insight toggle */}
-      <button
-        onClick={() => setInsightOpen((o) => !o)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-          padding: '0.4rem 0.875rem',
-          borderRadius: '999px',
-          border: '1px solid',
-          borderColor: insightOpen ? 'rgba(212,168,232,0.5)' : 'rgba(201,187,232,0.2)',
-          background: insightOpen
-            ? 'rgba(212,168,232,0.15)'
-            : 'rgba(255,255,255,0.05)',
-          cursor: 'pointer',
-          fontFamily: "'Nunito',sans-serif",
-          fontSize: 'var(--text-xs)',
-          fontWeight: 700,
-          color: 'var(--lavender-light)',
-          transition: 'all 0.18s ease',
-          width: 'fit-content',
-          backdropFilter: 'blur(8px)',
-        }}
-      >
-        <span
+      {/* Action buttons row: AI Insight + Card Generator */}
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setInsightOpen((o) => !o)}
           style={{
-            display: 'inline-block',
-            transition: 'transform 0.2s',
-            transform: insightOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '999px',
+            border: '1px solid',
+            borderColor: insightOpen ? 'rgba(212,168,232,0.5)' : 'rgba(201,187,232,0.2)',
+            background: insightOpen ? 'rgba(212,168,232,0.15)' : 'rgba(255,255,255,0.05)',
+            cursor: 'pointer',
+            fontFamily: "'Nunito',sans-serif",
+            fontSize: 'var(--text-xs)',
+            fontWeight: 700,
+            color: 'var(--lavender-light)',
+            transition: 'all 0.18s ease',
           }}
         >
-          ▶
-        </span>
-        🤖 AI giải thích lý do
-      </button>
+          <span>🤖 Lý do chọn</span>
+        </button>
+
+        <button
+          onClick={() => onOpenCard(gift)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '999px',
+            border: '1px solid rgba(242,196,208,0.4)',
+            background: 'rgba(242,196,208,0.15)',
+            cursor: 'pointer',
+            fontFamily: "'Nunito',sans-serif",
+            fontSize: 'var(--text-xs)',
+            fontWeight: 700,
+            color: '#f2c4d0',
+            transition: 'all 0.18s ease',
+          }}
+        >
+          <span>💌 Tạo thiệp chúc</span>
+        </button>
+      </div>
 
       {/* Expandable AI Insight */}
       <AnimatePresence>
@@ -177,6 +192,9 @@ function GiftCard({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Feedback Widget */}
+      <GiftFeedback suggestionId={gift.id} productName={gift.productName} quizAnswers={answers} />
 
       {/* Buy buttons */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: 'auto' }}>
@@ -249,6 +267,7 @@ export default function ResultsPage() {
   const { suggestions, isLoadingAI, aiError, isComplete, selectGift, reset, answers } =
     useQuizStore();
   const [selectedGiftId, setSelectedGiftId] = useState<string | null>(null);
+  const [activeCardGift, setActiveCardGift] = useState<GiftSuggestion | null>(null);
 
   useEffect(() => {
     if (!isComplete) router.replace('/quiz');
@@ -447,6 +466,7 @@ export default function ResultsPage() {
                       index={index}
                       isSelected={selectedGiftId === gift.id}
                       onBuy={handleBuy}
+                      onOpenCard={(g) => setActiveCardGift(g)}
                     />
                   ))}
                 </AnimatePresence>
@@ -487,6 +507,15 @@ export default function ResultsPage() {
           ) : null}
         </div>
       </main>
+
+      {/* Greeting Card Modal */}
+      {activeCardGift && (
+        <GreetingCardModal
+          gift={activeCardGift}
+          answers={answers}
+          onClose={() => setActiveCardGift(null)}
+        />
+      )}
     </>
   );
 }

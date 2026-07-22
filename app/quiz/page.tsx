@@ -235,7 +235,7 @@ function QuizInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const TOTAL_STEPS = 8;
+  const TOTAL_STEPS = 9;
   const progress = ((currentStep + 1) / TOTAL_STEPS) * 100;
 
   const handleNext = () => {
@@ -289,6 +289,7 @@ function QuizInner() {
       case 5: return (answers.personality?.length ?? 0) > 0;
       case 6: return (answers.interests?.length ?? 0) > 0;
       case 7: return !!answers.budget;
+      case 8: return true; // custom description is optional
       default: return false;
     }
   };
@@ -302,6 +303,7 @@ function QuizInner() {
     'Tính cách nổi bật? (tối đa 3) ✨',
     'Sở thích của họ? 🎯',
     'Ngân sách của bạn? 💰',
+    'Mô tả thêm về người nhận (Tùy chọn) 📝',
   ];
 
   const renderStep = () => {
@@ -582,6 +584,34 @@ function QuizInner() {
                 </motion.button>
               );
             })}
+          </div>
+        );
+
+      case 8:
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--lavender-light)', margin: 0 }}>
+              Nhập thêm các chi tiết đặc biệt (thói quen, phong cách riêng, kỷ niệm hay lưu ý khó tính)... AI sẽ ưu tiên đưa chi tiết này vào món quà!
+            </p>
+            <textarea
+              rows={5}
+              placeholder="Ví dụ: Anh ấy rất thích đi cắm trại cuối tuần, phong cách tối giản, hơi khó tính nhưng rất thương gia đình..."
+              value={answers.customDescription || ''}
+              onChange={(e) => setAnswer('customDescription', e.target.value)}
+              style={{
+                width: '100%',
+                padding: '1rem',
+                borderRadius: '16px',
+                border: '1.5px solid rgba(201,187,232,0.3)',
+                background: 'rgba(255,255,255,0.06)',
+                color: '#fff',
+                fontFamily: "'Nunito', sans-serif",
+                fontSize: 'var(--text-base)',
+                lineHeight: 1.6,
+                outline: 'none',
+                resize: 'none',
+              }}
+            />
           </div>
         );
 

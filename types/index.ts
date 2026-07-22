@@ -7,6 +7,7 @@ export interface QuizAnswers {
   personality: string[];
   interests: string[];
   budget: string;
+  customDescription?: string;
 }
 
 export interface GiftSuggestion {
@@ -67,4 +68,28 @@ export interface OfflineSearchResult {
   stores: Store[];
   keyword: string;
   userLocation: { lat: number; lng: number };
+}
+
+export interface FeedbackItem {
+  id: string;
+  suggestionId: string;
+  productName: string;
+  type: 'like' | 'dislike';
+  note?: string;
+  quizAnswers?: Partial<QuizAnswers>;
+  createdAt: string;
+}
+
+export interface GreetingCardRequest {
+  giftName: string;
+  occasion: string;
+  relationship: string;
+  tone: 'warm' | 'funny' | 'formal' | 'concise';
+  customDescription?: string;
+  interests?: string[];
+}
+
+export interface GreetingCardResponse {
+  cardText: string;
+  provider?: string;
 }
