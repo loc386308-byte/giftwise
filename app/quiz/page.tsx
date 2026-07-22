@@ -147,10 +147,16 @@ function OptionButton({
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
       className={`option-card ${selected ? 'selected' : ''}`}
-      style={{ width: '100%', fontFamily: 'inherit' }}
+      style={{ width: '100%', fontFamily: "'Nunito',sans-serif" }}
     >
-      <span style={{ fontSize: '2rem' }}>{emoji}</span>
-      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>{label}</span>
+      <span style={{ fontSize: '1.875rem', lineHeight: 1 }}>{emoji}</span>
+      <span style={{
+        fontSize: 'var(--text-sm)',
+        fontWeight: 600,
+        fontFamily: "'Nunito',sans-serif",
+        color: selected ? 'var(--cream)' : 'var(--color-text-muted)',
+        lineHeight: 1.3,
+      }}>{label}</span>
     </motion.button>
   );
 }
@@ -169,7 +175,8 @@ function Chip({
       onClick={onClick}
       className={`chip ${selected ? 'selected' : ''}`}
       style={{
-        fontFamily: 'inherit',
+        fontFamily: "'Nunito',sans-serif",
+        fontSize: 'var(--text-sm)',
         opacity: disabled && !selected ? 0.4 : 1,
         cursor: disabled && !selected ? 'not-allowed' : 'pointer',
       }}
@@ -575,9 +582,10 @@ function QuizInner() {
             right: 0,
             zIndex: 99,
             padding: '0.625rem 1.5rem 0.5rem',
-            background: 'rgba(251,249,246,0.95)',
-            backdropFilter: 'blur(12px)',
-            borderBottom: '1px solid var(--color-border-light)',
+            background: 'rgba(20,17,48,0.88)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderBottom: '1px solid rgba(201,187,232,0.15)',
           }}
         >
           <div style={{ maxWidth: '640px', margin: '0 auto' }}>
@@ -586,22 +594,23 @@ function QuizInner() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span
                   style={{
-                    fontSize: '0.7rem',
+                    fontSize: 'var(--text-xs)',
                     fontWeight: 700,
-                    padding: '0.15rem 0.55rem',
+                    fontFamily: "'Comfortaa','Nunito',sans-serif",
+                    padding: '0.2rem 0.6rem',
                     borderRadius: '999px',
-                    background: 'var(--gradient-main)',
-                    color: 'white',
-                    letterSpacing: '0.02em',
+                    background: 'linear-gradient(135deg, #c9a8e8, #9bb0e8)',
+                    color: '#1a1535',
+                    letterSpacing: '0.03em',
                   }}
                 >
                   {currentStep + 1}/{TOTAL_STEPS}
                 </span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, fontFamily: "'Nunito',sans-serif", color: 'var(--lavender-light)' }}>
                   {STEP_TITLES[currentStep]}
                 </span>
               </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)' }}>
+              <span style={{ fontSize: 'var(--text-xs)', fontFamily: "'Nunito',sans-serif", color: 'var(--color-text-light)' }}>
                 ~{Math.max(1, Math.ceil((TOTAL_STEPS - currentStep) * 0.3))} phút
               </span>
             </div>
@@ -663,11 +672,13 @@ function QuizInner() {
                 {/* Question Title */}
                 <h2
                   style={{
-                    fontSize: 'clamp(1.25rem, 4vw, 1.75rem)',
-                    fontWeight: 800,
-                    marginBottom: '1.75rem',
-                    color: 'var(--color-text)',
-                    letterSpacing: '-0.02em',
+                    fontSize: 'clamp(1.2rem, 3.5vw, 1.6rem)',
+                    fontFamily: "'Comfortaa','Nunito',sans-serif",
+                    fontWeight: 700,
+                    marginBottom: '1.5rem',
+                    color: 'var(--cream)',
+                    letterSpacing: 'var(--ls-normal)',
+                    lineHeight: 'var(--lh-snug)',
                   }}
                 >
                   {STEP_TITLES[currentStep]}
@@ -680,13 +691,14 @@ function QuizInner() {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '0.35rem',
-                      padding: '0.2rem 0.65rem',
+                      padding: '0.25rem 0.7rem',
                       borderRadius: '999px',
-                      background: 'rgba(168,85,247,0.08)',
-                      border: '1px solid rgba(168,85,247,0.2)',
-                      fontSize: '0.72rem',
+                      background: 'rgba(201,187,232,0.12)',
+                      border: '1px solid rgba(201,187,232,0.25)',
+                      fontSize: 'var(--text-xs)',
+                      fontFamily: "'Nunito',sans-serif",
                       fontWeight: 600,
-                      color: '#7c3aed',
+                      color: 'var(--lavender-light)',
                       marginBottom: '1rem',
                     }}
                   >
@@ -705,9 +717,10 @@ function QuizInner() {
         <div
           style={{
             padding: '1.25rem 1.5rem',
-            background: 'rgba(251,249,246,0.95)',
-            backdropFilter: 'blur(10px)',
-            borderTop: '1px solid var(--color-border-light)',
+            background: 'rgba(20,17,48,0.9)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderTop: '1px solid rgba(201,187,232,0.15)',
             position: 'sticky',
             bottom: 0,
           }}
@@ -768,10 +781,11 @@ function QuizInner() {
                   background: 'none',
                   border: 'none',
                   color: 'var(--color-text-muted)',
-                  fontSize: '0.82rem',
+                  fontSize: 'var(--text-sm)',
+                  fontFamily: "'Nunito',sans-serif",
                   cursor: 'pointer',
-                  fontFamily: 'inherit',
                   textDecoration: 'underline',
+                  textUnderlineOffset: '3px',
                   padding: '0.25rem 0',
                   textAlign: 'center',
                 }}
@@ -788,10 +802,10 @@ function QuizInner() {
 
 export default function QuizPage() {
   const quizSkeleton = (
-    <div style={{ paddingTop: '60px', minHeight: '100dvh', background: 'var(--color-bg)' }}>
+    <div style={{ paddingTop: '60px', minHeight: '100dvh', background: 'transparent' }}>
       {/* Progress bar skeleton */}
-      <div style={{ height: '4px', background: 'var(--color-border-light)', position: 'fixed', top: '60px', left: 0, right: 0, zIndex: 99 }}>
-        <div style={{ width: '12%', height: '100%', background: 'var(--gradient-main)', borderRadius: '0 4px 4px 0' }} />
+      <div style={{ height: '4px', background: 'rgba(201,187,232,0.15)', position: 'fixed', top: '60px', left: 0, right: 0, zIndex: 99 }}>
+        <div style={{ width: '12%', height: '100%', background: 'linear-gradient(90deg,#c9a8e8,#9bb0e8)', borderRadius: '0 4px 4px 0' }} />
       </div>
       <div style={{ maxWidth: '540px', margin: '0 auto', padding: '3rem 1.5rem' }}>
         <div className="skeleton" style={{ width: '60%', height: '14px', borderRadius: '8px', marginBottom: '0.5rem' }} />

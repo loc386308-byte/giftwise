@@ -31,26 +31,29 @@ function GiftCard({
         padding: '1.5rem',
         position: 'relative',
         border: isSelected
-          ? '2px solid var(--color-accent-1)'
-          : '1px solid var(--color-border-light)',
+          ? '1.5px solid rgba(212,168,232,0.6)'
+          : '1px solid rgba(201,187,232,0.15)',
         background: isSelected
-          ? 'linear-gradient(135deg, #FFF1F8, #F5F3FF)'
-          : 'white',
+          ? 'linear-gradient(135deg, rgba(212,168,232,0.18), rgba(155,181,232,0.12))'
+          : 'rgba(255,255,255,0.06)',
         transition: 'all 0.2s ease',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.75rem',
+        boxShadow: isSelected
+          ? '0 0 20px rgba(212,168,232,0.2), var(--shadow-card)'
+          : 'var(--shadow-card)',
       }}
     >
       {/* Top row: category + selected badge */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>
+        <span className="badge badge-primary" style={{ fontSize: 'var(--text-xs)', fontFamily: "'Nunito',sans-serif" }}>
           {gift.category}
         </span>
         {isSelected && (
           <span
             className="badge"
-            style={{ background: 'var(--gradient-main)', color: 'white', fontSize: '0.65rem' }}
+            style={{ background: 'linear-gradient(135deg,rgba(212,168,232,0.35),rgba(155,181,232,0.3))', color: 'var(--cream)', fontSize: 'var(--text-xs)', border: '1px solid rgba(212,168,232,0.4)' }}
           >
             ✓ Đang chọn
           </span>
@@ -59,14 +62,15 @@ function GiftCard({
 
       {/* Emoji + Name */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-        <span style={{ fontSize: '2.5rem', lineHeight: 1, flexShrink: 0 }}>{gift.emoji}</span>
+        <span style={{ fontSize: '2.25rem', lineHeight: 1, flexShrink: 0 }}>{gift.emoji}</span>
         <h3
           style={{
-            fontSize: '0.975rem',
+            fontSize: 'var(--text-base)',
+            fontFamily: "'Nunito',sans-serif",
             fontWeight: 700,
-            color: 'var(--color-text)',
-            lineHeight: 1.4,
-            letterSpacing: '-0.01em',
+            color: 'var(--cream)',
+            lineHeight: 1.45,
+            letterSpacing: 'var(--ls-normal)',
           }}
         >
           {gift.productName}
@@ -76,9 +80,10 @@ function GiftCard({
       {/* Price */}
       <p
         style={{
-          fontWeight: 800,
-          fontSize: '0.95rem',
-          background: 'var(--gradient-main)',
+          fontFamily: "'Nunito',sans-serif",
+          fontWeight: 700,
+          fontSize: 'var(--text-sm)',
+          background: 'linear-gradient(135deg, #d4a8e8, #9bb5e8)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
@@ -94,20 +99,21 @@ function GiftCard({
           display: 'flex',
           alignItems: 'center',
           gap: '0.45rem',
-          padding: '0.45rem 0.875rem',
+          padding: '0.4rem 0.875rem',
           borderRadius: '999px',
-          border: '1.5px solid',
-          borderColor: insightOpen ? '#a855f7' : '#e9d5ff',
+          border: '1px solid',
+          borderColor: insightOpen ? 'rgba(212,168,232,0.5)' : 'rgba(201,187,232,0.2)',
           background: insightOpen
-            ? 'linear-gradient(135deg,#fdf4ff,#ede9fe)'
-            : 'rgba(168,85,247,0.05)',
+            ? 'rgba(212,168,232,0.15)'
+            : 'rgba(255,255,255,0.05)',
           cursor: 'pointer',
-          fontFamily: 'inherit',
-          fontSize: '0.75rem',
+          fontFamily: "'Nunito',sans-serif",
+          fontSize: 'var(--text-xs)',
           fontWeight: 700,
-          color: '#7c3aed',
+          color: 'var(--lavender-light)',
           transition: 'all 0.18s ease',
           width: 'fit-content',
+          backdropFilter: 'blur(8px)',
         }}
       >
         <span
@@ -135,19 +141,20 @@ function GiftCard({
           >
             <div
               style={{
-                background: 'linear-gradient(135deg,#fdf8ff,#f0f9ff)',
+                background: 'rgba(212,168,232,0.1)',
                 borderRadius: '14px',
                 padding: '1rem',
-                borderLeft: '3px solid #a855f7',
+                borderLeft: '3px solid rgba(212,168,232,0.5)',
               }}
             >
               <div
                 style={{
-                  fontSize: '0.65rem',
+                  fontSize: 'var(--text-xs)',
+                  fontFamily: "'Nunito',sans-serif",
                   fontWeight: 700,
-                  color: '#a855f7',
+                  color: 'var(--lavender-light)',
                   marginBottom: '0.4rem',
-                  letterSpacing: '0.06em',
+                  letterSpacing: 'var(--ls-wide)',
                   textTransform: 'uppercase',
                 }}
               >
@@ -155,10 +162,12 @@ function GiftCard({
               </div>
               <p
                 style={{
-                  fontSize: '0.83rem',
-                  color: '#374151',
-                  lineHeight: 1.7,
+                  fontSize: 'var(--text-sm)',
+                  fontFamily: "'Nunito Sans','Nunito',sans-serif",
+                  color: 'var(--lavender-pale)',
+                  lineHeight: 'var(--lh-relaxed)',
                   margin: 0,
+                  fontWeight: 400,
                 }}
               >
                 {gift.reason}
@@ -178,8 +187,8 @@ function GiftCard({
             flex: '1 1 120px',
             justifyContent: 'center',
             padding: '0.5rem 0.875rem',
-            fontSize: '0.8rem',
-            fontFamily: 'inherit',
+            fontSize: 'var(--text-sm)',
+            fontFamily: "'Nunito',sans-serif",
           }}
         >
           🛒 Mua Online
@@ -192,8 +201,8 @@ function GiftCard({
             flex: '1 1 120px',
             justifyContent: 'center',
             padding: '0.5rem 0.875rem',
-            fontSize: '0.8rem',
-            fontFamily: 'inherit',
+            fontSize: 'var(--text-sm)',
+            fontFamily: "'Nunito',sans-serif",
           }}
         >
           📍 Cửa hàng
@@ -264,7 +273,9 @@ export default function ResultsPage() {
         {/* Hero */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #FFF1F8 0%, #F5F3FF 100%)',
+            background: 'rgba(26,21,53,0.7)',
+            backdropFilter: 'blur(20px)',
+            borderBottom: '1px solid rgba(201,187,232,0.15)',
             padding: '3rem 1.5rem 2rem',
             textAlign: 'center',
           }}
@@ -281,10 +292,16 @@ export default function ResultsPage() {
                     🤖
                   </motion.span>
                 </div>
-                <h1 style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 800, marginBottom: '0.5rem' }}>
+                <h1 style={{
+                  fontFamily: "'Comfortaa','Nunito',sans-serif",
+                  fontSize: 'clamp(1.4rem, 4vw, 1.875rem)',
+                  fontWeight: 700,
+                  marginBottom: '0.5rem',
+                  color: 'var(--cream)',
+                }}>
                   AI đang phân tích...
                 </h1>
-                <p style={{ color: 'var(--color-text-muted)' }}>Đang cá nhân hóa gợi ý quà cho bạn ✨</p>
+                <p style={{ fontFamily: "'Nunito',sans-serif", color: 'var(--color-text-muted)', fontSize: 'var(--text-base)' }}>Đang cá nhân hóa gợi ý quà cho bạn ✨</p>
               </>
             ) : aiError ? (
               <>
@@ -316,16 +333,19 @@ export default function ResultsPage() {
                 </motion.div>
                 <h1
                   style={{
-                    fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
-                    fontWeight: 900,
+                    fontFamily: "'Comfortaa','Nunito',sans-serif",
+                    fontSize: 'clamp(1.4rem, 4vw, 2.1rem)',
+                    fontWeight: 700,
                     marginBottom: '0.625rem',
-                    letterSpacing: '-0.02em',
+                    color: 'var(--cream)',
+                    letterSpacing: 'var(--ls-normal)',
+                    lineHeight: 'var(--lh-snug)',
                   }}
                 >
                   AI đã gợi ý{' '}
                   <span className="gradient-text">{suggestions.length} món quà</span> cho bạn!
                 </h1>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '0.75rem' }}>
+                <p style={{ fontFamily: "'Nunito',sans-serif", color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginBottom: '0.75rem' }}>
                   Phân tích từ{' '}
                   {[
                     answers?.zodiac && answers.zodiac !== 'skip' && 'cung hoàng đạo',
@@ -360,7 +380,7 @@ export default function ResultsPage() {
                         <span
                           key={i}
                           className="chip selected"
-                          style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem' }}
+                          style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', fontFamily: "'Nunito',sans-serif" }}
                         >
                           {tag}
                         </span>
@@ -370,11 +390,12 @@ export default function ResultsPage() {
                         key={`p${i}`}
                         className="chip"
                         style={{
-                          fontSize: '0.7rem',
-                          padding: '0.2rem 0.6rem',
-                          background: '#ede9fe',
-                          color: '#7c3aed',
-                          border: '1px solid #c4b5fd',
+                          fontSize: 'var(--text-xs)',
+                          padding: '0.2rem 0.65rem',
+                          background: 'rgba(212,168,232,0.15)',
+                          color: 'var(--lavender-light)',
+                          border: '1px solid rgba(212,168,232,0.25)',
+                          fontFamily: "'Nunito',sans-serif",
                         }}
                       >
                         ✨ {p}
@@ -385,11 +406,12 @@ export default function ResultsPage() {
                         key={`i${i}`}
                         className="chip"
                         style={{
-                          fontSize: '0.7rem',
-                          padding: '0.2rem 0.6rem',
-                          background: '#fdf0ff',
-                          color: '#a21caf',
-                          border: '1px solid #e879f9',
+                          fontSize: 'var(--text-xs)',
+                          padding: '0.2rem 0.65rem',
+                          background: 'rgba(155,181,232,0.15)',
+                          color: 'var(--periwinkle)',
+                          border: '1px solid rgba(155,181,232,0.25)',
+                          fontFamily: "'Nunito',sans-serif",
                         }}
                       >
                         🎯 {interest}
@@ -446,10 +468,11 @@ export default function ResultsPage() {
                     background: 'none',
                     border: 'none',
                     color: 'var(--color-text-light)',
-                    fontSize: '0.85rem',
+                    fontSize: 'var(--text-sm)',
+                    fontFamily: "'Nunito',sans-serif",
                     cursor: 'pointer',
                     textDecoration: 'underline',
-                    fontFamily: 'inherit',
+                    textUnderlineOffset: '3px',
                   }}
                 >
                   🔄 Làm lại quiz để thay đổi tiêu chí
