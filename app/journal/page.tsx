@@ -669,14 +669,17 @@ export default function JournalPage() {
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [search, setSearch] = useState('');
 
-  const selectedPerson = people.find((p) => p.id === selectedId);
+  const activeUserId = user ? user.id : 'guest';
+  const myPeople = people.filter((p) => (p.userId ? p.userId === activeUserId : activeUserId === 'guest'));
 
-  const filteredPeople = people.filter((p) =>
+  const selectedPerson = myPeople.find((p) => p.id === selectedId);
+
+  const filteredPeople = myPeople.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.relationship.toLowerCase().includes(search.toLowerCase())
   );
 
-  const upcomingBirthdays = people
+  const upcomingBirthdays = myPeople
     .filter((p) => {
       if (!p.birthday) return false;
       const [month, day] = p.birthday.split('/').map(Number);

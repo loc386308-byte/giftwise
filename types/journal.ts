@@ -11,6 +11,7 @@ export interface GiftRecord {
 
 export interface Person {
   id: string;
+  userId?: string;     // owner account ID or 'guest'
   name: string;
   relationship: string; // 'người yêu' | 'bạn thân' | 'bố/mẹ' | ...
   gender?: 'nữ' | 'nam' | 'khác';

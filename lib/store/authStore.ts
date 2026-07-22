@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useJournalStore } from './journalStore';
 
 export interface UserProfile {
   id: string;
@@ -24,7 +25,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthModalOpen: false,
       login: (email: string, name: string) => {
-        const id = `user_${btoa(email.toLowerCase().trim()).slice(0, 12)}`;
+        const id = `user_${btoa(email.toLowerCase().trim()).replace(/=/g, '').slice(0, 12)}`;
         const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`;
         const newUser: UserProfile = {
           id,
@@ -34,6 +35,10 @@ export const useAuthStore = create<AuthState>()(
           createdAt: new Date().toISOString(),
         };
         set({ user: newUser, isAuthModalOpen: false });
+        // Automatically claim any unassigned/guest records to this user
+        setTimeout(() => {
+          useJournalStore.getState().claimGuestRecords(id);
+        }, 50);
       },
       logout: () => {
         set({ user: null });
