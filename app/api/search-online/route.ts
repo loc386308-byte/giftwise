@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Product } from '@/types';
+import { AIService } from '@/lib/services/aiService';
+
+// ─── Rate limiting for search-online (30 requests/hour per IP) ─────────────
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+function getRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) { rateLimitMap.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 }); return true; }
+  if (entry.count >= 30) return false;
+  entry.count++;
+  return true;
+}
 
 // ─── Type ─────────────────────────────────────────────────────────────────────
 type RawProduct = Omit<Product, 'id'> & { tags: string[] };
@@ -542,76 +554,31 @@ function scoreProduct(product: RawProduct, keyword: string, giftName: string): n
 }
 
 // ============================================================
-// CLAUDE API CALL
-// ============================================================
-async function callClaudeForProducts(
-  keyword: string,
-  giftName: string,
-  apiKey: string,
-): Promise<Product[]> {
-  const prompt = `Bạn là trợ lý tìm sản phẩm Việt Nam.
-
-Người dùng muốn mua: "${giftName || keyword}"
-Từ khóa tìm kiếm: "${keyword}"
-
-Hãy tạo danh sách 6 SẢN PHẨM CỤ THỂ ĐÚNG VỚI "${giftName || keyword}" đang bán trên Shopee/TikTok Shop. 
-Yêu cầu:
-1. Sản phẩm phải ĐÚNG là "${giftName || keyword}" hoặc variant của nó — không phải sản phẩm khác category
-2. Đa dạng về giá (rẻ → vừa → cao cấp) trong cùng loại sản phẩm
-3. Tên đầy đủ: thương hiệu + model + thông số
-4. imageUrl: ảnh Unsplash phù hợp với chính xác loại sản phẩm này (https://images.unsplash.com/photo-XXXX?w=600&h=600&fit=crop&q=90)
-5. affiliateLink: https://shopee.vn/search?keyword=[URL-encoded keyword chính xác]
-6. price/originalPrice: số nguyên VNĐ thực tế thị trường Việt Nam
-
-Trả về CHỈ JSON (không giải thích thêm):
-{"products":[{"id":"p1","name":"...","price":150000,"originalPrice":220000,"imageUrl":"https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=600&fit=crop&q=90","rating":4.9,"reviewCount":3200,"sold":8500,"source":"shopee","affiliateLink":"https://shopee.vn/search?keyword=...","discount":32,"badge":"Bán chạy"}]}`;
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-3-5-haiku-20241022',
-      max_tokens: 2048,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-
-  if (!response.ok) throw new Error(`Claude status: ${response.status}`);
-  const data = await response.json();
-  const text = data.content?.[0]?.text || '';
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('No JSON returned');
-  const parsed = JSON.parse(jsonMatch[0]);
-  return parsed.products || [];
-}
-
-// ============================================================
 // GET HANDLER
 // ============================================================
 export async function GET(request: NextRequest) {
   try {
+    const forwarded = request.headers.get('x-forwarded-for');
+    const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
+    if (!getRateLimit(ip)) {
+      return NextResponse.json({ error: 'Quá nhiều yêu cầu tìm kiếm, vui lòng thử lại sau.' }, { status: 429 });
+    }
+
     const { searchParams } = new URL(request.url);
     const keyword = searchParams.get('keyword') || '';
     const giftName = searchParams.get('gift') || keyword;
 
     let products: Product[] = [];
 
-    // 1. Try Claude AI first — it generates products specific to the gift
-    if (process.env.ANTHROPIC_API_KEY) {
-      try {
-        products = await callClaudeForProducts(keyword, giftName, process.env.ANTHROPIC_API_KEY);
-      } catch (aiError) {
-        console.warn('AI product generation failed, falling back to scored mock:', aiError);
-      }
-    }
+    // 1. Call AIService (handles cache, Claude/Gemini AI, retries, timeout, JSON sanitizing)
+    const { products: aiProducts, source } = await AIService.getOnlineProducts(keyword, giftName);
+    products = aiProducts;
 
     // 2. Fallback: score all catalogue products by relevance to keyword + giftName
     if (products.length === 0) {
-      await new Promise((r) => setTimeout(r, 500));
+      if (source === 'fallback') {
+        await new Promise((r) => setTimeout(r, 400));
+      }
 
       const shopeeUrl = `https://shopee.vn/search?keyword=${encodeURIComponent(keyword)}`;
       const tiktokUrl = `https://www.tiktok.com/search?q=${encodeURIComponent(keyword)}`;

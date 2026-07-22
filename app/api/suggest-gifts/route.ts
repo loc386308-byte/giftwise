@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GiftSuggestion, QuizAnswers } from '@/types';
+import { AIService } from '@/lib/services/aiService';
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -385,75 +386,34 @@ function generateSuggestions(answers: QuizAnswers): GiftSuggestion[] {
   }));
 }
 
-async function callAnthropicAPI(prompt: string): Promise<GiftSuggestion[]> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('No API key');
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
-  });
-  if (!response.ok) throw new Error(`Anthropic error ${response.status}`);
-  const data = await response.json();
-  const text = data.content?.[0]?.text || '';
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('No JSON');
-  return JSON.parse(match[0]).suggestions || [];
-}
-
 // ─── POST handler ─────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
-    if (!getRateLimit(ip)) return NextResponse.json({ error: 'Quá nhiều yêu cầu, vui lòng thử lại sau 1 giờ.' }, { status: 429 });
+    if (!getRateLimit(ip)) {
+      return NextResponse.json({ error: 'Quá nhiều yêu cầu, vui lòng thử lại sau 1 giờ.' }, { status: 429 });
+    }
 
     const answers: QuizAnswers = await request.json();
     if (!answers.occasion || !answers.relationship || !answers.gender) {
       return NextResponse.json({ error: 'Vui lòng hoàn thành tất cả câu hỏi bắt buộc.' }, { status: 400 });
     }
 
-    let suggestions: GiftSuggestion[];
+    // Call AIService (handles cache, Claude/Gemini AI, retries, timeout, JSON sanitizing)
+    const { suggestions: aiResult, source } = await AIService.getGiftSuggestions(answers);
 
-    if (process.env.ANTHROPIC_API_KEY) {
-      try {
-        const zodiac = getZodiac(answers.zodiac || '');
-        const zodiacNote = zodiac
-          ? `Cung ${zodiac.label}: ${zodiac.keywords.join(', ')} — tính cách ${zodiac.giftPersonality}, màu may mắn ${zodiac.luckColor}.`
-          : 'Không có thông tin cung hoàng đạo.';
-        const prompt = `Bạn là chuyên gia tặng quà Việt Nam thông minh. Phân tích hồ sơ người nhận và gợi ý 9 quà tặng CHÍNH XÁC NHẤT.
+    let suggestions: GiftSuggestion[] = aiResult;
 
-HỒ SƠ NGƯỜI NHẬN:
-- Dịp tặng: ${answers.occasion}
-- Mối quan hệ: ${answers.relationship}
-- Giới tính: ${answers.gender}
-- Độ tuổi: ${answers.ageRange}
-- Cung hoàng đạo: ${zodiacNote}
-- Tính cách: ${(answers.personality || []).join(', ')}
-- Sở thích: ${(answers.interests || []).join(', ')}
-- Ngân sách: ${answers.budget}
-
-YÊU CẦU QUAN TRỌNG:
-1. Giá PHẢI nằm trong ngân sách (${answers.budget}) — sai thì không chấp nhận
-2. Kết hợp cả quà vật chất lẫn trải nghiệm (vé concert, spa, du lịch, khóa học)
-3. Phân tích sâu cung hoàng đạo → tính cách → loại quà phù hợp
-4. Đề xuất quà đa dạng, không trùng lặp danh mục
-5. Lý do tặng quà phải thuyết phục, cá nhân hóa cao
-
-Trả về CHỈ JSON:
-{"suggestions":[{"productName":"...","reason":"lý do chi tiết 2-3 câu...","estimatedPriceRange":"XXXđ – YYYđ","searchKeyword":"từ khóa tìm Shopee","emoji":"🎁","category":"danh mục"}]}`;
-        const raw = await callAnthropicAPI(prompt);
-        suggestions = raw.length > 0 ? raw : generateSuggestions(answers);
-      } catch {
-        await new Promise(r => setTimeout(r, 800));
-        suggestions = generateSuggestions(answers);
+    if (suggestions.length === 0) {
+      // Fallback: Smart Scoring Engine (local heuristic)
+      if (source === 'fallback') {
+        await new Promise((r) => setTimeout(r, 600));
       }
-    } else {
-      await new Promise(r => setTimeout(r, 1500));
       suggestions = generateSuggestions(answers);
     }
 
-    return NextResponse.json({ suggestions });
+    return NextResponse.json({ suggestions, source });
   } catch (error) {
     console.error('suggest-gifts error:', error);
     return NextResponse.json({ error: 'Oops! Có lỗi xảy ra. Vui lòng thử lại.' }, { status: 500 });
