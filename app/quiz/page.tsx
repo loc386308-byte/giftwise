@@ -385,13 +385,15 @@ function QuizInner() {
                       gap: '0.4rem',
                       padding: '0.75rem 0.25rem',
                       borderRadius: '16px',
-                      border: `2px solid ${isSelected ? 'var(--color-accent-1)' : 'var(--color-border)'}`,
-                      background: isSelected ? 'linear-gradient(135deg,#fdf0ff,#f0f0ff)' : 'white',
+                      border: `1.5px solid ${isSelected ? 'rgba(212,168,232,0.6)' : 'rgba(201,187,232,0.18)'}`,
+                      background: isSelected
+                        ? 'linear-gradient(135deg, rgba(212,168,232,0.22), rgba(155,181,232,0.15))'
+                        : 'rgba(255,255,255,0.06)',
                       cursor: 'pointer',
-                      fontFamily: 'inherit',
+                      fontFamily: "'Nunito',sans-serif",
                       transition: 'all 0.15s ease',
                       minHeight: '82px',
-                      boxShadow: isSelected ? '0 2px 12px rgba(168,85,247,0.18)' : 'none',
+                      boxShadow: isSelected ? '0 0 16px rgba(212,168,232,0.25)' : 'none',
                     }}
                   >
                     {/* Gradient icon circle */}
@@ -399,7 +401,7 @@ function QuizInner() {
                       width: '36px',
                       height: '36px',
                       borderRadius: '50%',
-                      background: isSelected ? z.color : '#f3f4f6',
+                      background: isSelected ? z.color : 'rgba(255,255,255,0.08)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -410,12 +412,12 @@ function QuizInner() {
                       {z.emoji}
                     </div>
                     <span style={{
-                      fontSize: '0.68rem',
+                      fontSize: 'var(--text-xs)',
+                      fontFamily: "'Nunito',sans-serif",
                       fontWeight: 700,
-                      color: isSelected ? 'var(--color-accent-1)' : 'var(--color-text)',
+                      color: isSelected ? 'var(--cream)' : 'var(--lavender-light)',
                       lineHeight: 1.3,
                       textAlign: 'center',
-                      letterSpacing: '-0.01em',
                     }}>
                       {z.name}
                     </span>
@@ -455,8 +457,9 @@ function QuizInner() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '0.75rem',
                     padding: '0.875rem 1rem', borderRadius: '14px',
-                    background: 'linear-gradient(135deg,#fdf0ff,#ede9fe)',
-                    border: '1px solid #e9d5ff',
+                    background: 'rgba(212,168,232,0.12)',
+                    backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(212,168,232,0.25)',
                   }}
                 >
                   {chosen && (
@@ -471,10 +474,10 @@ function QuizInner() {
                     </div>
                   )}
                   <div>
-                    <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-accent-1)', marginBottom: '0.15rem' }}>
+                    <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--cream)', marginBottom: '0.15rem' }}>
                       {answers.zodiac}
                     </p>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', lineHeight: 1.5, margin: 0 }}>
+                    <p style={{ fontFamily: "'Nunito',sans-serif", fontSize: 'var(--text-xs)', color: 'var(--lavender-pale)', lineHeight: 1.5, margin: 0 }}>
                       {descriptions[answers.zodiac] || ''}
                     </p>
                   </div>
@@ -554,23 +557,27 @@ function QuizInner() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '1rem',
                     padding: '1rem 1.25rem', borderRadius: '16px',
-                    border: `2px solid ${isSelected ? 'var(--color-accent-1)' : 'var(--color-border)'}`,
-                    background: isSelected ? 'linear-gradient(135deg,#FFF1F8,#F5F3FF)' : 'white',
-                    cursor: 'pointer', transition: 'all 0.15s ease', fontFamily: 'inherit',
+                    border: `1.5px solid ${isSelected ? 'rgba(212,168,232,0.6)' : 'rgba(201,187,232,0.18)'}`,
+                    background: isSelected
+                      ? 'linear-gradient(135deg, rgba(212,168,232,0.22), rgba(155,181,232,0.15))'
+                      : 'rgba(255,255,255,0.06)',
+                    cursor: 'pointer', transition: 'all 0.15s ease', fontFamily: "'Nunito',sans-serif",
                     textAlign: 'left',
+                    boxShadow: isSelected ? '0 0 16px rgba(212,168,232,0.25)' : 'none',
+                    backdropFilter: 'blur(8px)',
                   }}
                 >
                   <span style={{ fontSize: '1.8rem', flexShrink: 0 }}>{b.emoji}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: isSelected ? 'var(--color-accent-1)' : 'var(--color-text)' }}>
+                    <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: isSelected ? 'var(--cream)' : 'var(--lavender-light)' }}>
                       {b.label}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '1px' }}>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                       {b.sub}
                     </div>
                   </div>
                   {isSelected && (
-                    <span style={{ fontSize: '1.2rem', color: 'var(--color-accent-1)', flexShrink: 0 }}>✓</span>
+                    <span style={{ fontSize: '1.2rem', color: 'var(--cream)', flexShrink: 0 }}>✓</span>
                   )}
                 </motion.button>
               );

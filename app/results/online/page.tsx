@@ -52,7 +52,7 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
       style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
     >
       {/* Image */}
-      <div style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: '#F0F0F0' }}>
+      <div style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
         <Image
           src={product.imageUrl}
           alt={product.name}
@@ -134,17 +134,15 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
                   onClick={() => setSelectedSize(size === selectedSize ? null : size)}
                   style={{
                     padding: '0.2rem 0.55rem',
-                    border: selectedSize === size
-                      ? '2px solid var(--color-accent-1)'
-                      : '1px solid var(--color-border)',
+                    border: selectedSize === size ? '1px solid rgba(212,168,232,0.5)' : '1px solid rgba(201,187,232,0.18)',
                     borderRadius: '8px',
                     fontSize: '0.72rem',
                     fontWeight: selectedSize === size ? 700 : 400,
-                    background: selectedSize === size ? '#FFF1F8' : 'white',
-                    color: selectedSize === size ? 'var(--color-accent-1)' : 'var(--color-text-muted)',
+                    background: selectedSize === size ? 'rgba(212,168,232,0.25)' : 'rgba(255,255,255,0.06)',
+                    color: selectedSize === size ? 'var(--cream)' : 'var(--lavender-light)',
                     cursor: 'pointer',
                     transition: 'all 0.15s',
-                    fontFamily: 'inherit',
+                    fontFamily: "'Nunito',sans-serif",
                   }}
                 >
                   {size}
@@ -257,31 +255,35 @@ function OnlineInner() {
         {/* Page header */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #FFF7ED 0%, #FFF1F8 100%)',
+            background: 'rgba(26,21,53,0.7)',
+            backdropFilter: 'blur(20px)',
+            borderBottom: '1px solid rgba(201,187,232,0.15)',
             padding: '2.5rem 1.5rem 2rem',
           }}
         >
           <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-              <Link href="/results" style={{ color: 'var(--color-text-muted)', textDecoration: 'none', fontSize: '0.875rem' }}>
+              <Link href="/results" style={{ color: 'var(--color-text-muted)', textDecoration: 'none', fontSize: 'var(--text-xs)', fontFamily: "'Nunito',sans-serif" }}>
                 ← Gợi ý quà
               </Link>
-              <span style={{ color: 'var(--color-border)' }}>/</span>
-              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Mua Online</span>
+              <span style={{ color: 'rgba(201,187,232,0.3)' }}>/</span>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--lavender-light)', fontFamily: "'Nunito',sans-serif" }}>Mua Online</span>
             </div>
             <h1
               style={{
-                fontSize: 'clamp(1.25rem, 3vw, 2rem)',
-                fontWeight: 900,
+                fontFamily: "'Comfortaa','Nunito',sans-serif",
+                fontSize: 'clamp(1.4rem, 4vw, 2.1rem)',
+                fontWeight: 700,
                 marginBottom: '0.375rem',
-                letterSpacing: '-0.02em',
+                color: 'var(--cream)',
+                lineHeight: 'var(--lh-snug)',
               }}
             >
-              🛒 Mua Online
+              🛒 Mua Online trên Shopee & TikTok
             </h1>
             {giftName && (
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
-                Kết quả cho: <strong style={{ color: 'var(--color-text)' }}>{giftName}</strong>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', fontFamily: "'Nunito',sans-serif" }}>
+                Kết quả tìm kiếm món: <strong style={{ color: 'var(--cream)' }}>{giftName}</strong>
               </p>
             )}
             <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>
