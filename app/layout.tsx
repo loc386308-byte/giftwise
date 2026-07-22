@@ -6,8 +6,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#FF6B9D',
+  themeColor: '#2e2660',
 };
+
 
 // ─── Root metadata (fallback cho tất cả routes) ────────────────────────────────
 export const metadata: Metadata = {
@@ -87,7 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap"
           rel="stylesheet"
         />
         <script
@@ -95,7 +96,36 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppJsonLd) }}
         />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {/* 🌙 Moon decoration */}
+        <div className="moon-deco" aria-hidden="true">
+          <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="28" cy="28" rx="28" ry="28" fill="#fff0c8" opacity="0.95"/>
+            <ellipse cx="36" cy="20" rx="20" ry="20" fill="#1a1244"/>
+          </svg>
+        </div>
+        {/* ✨ Floating sparkle stars */}
+        {[
+          { top:'12%', left:'5%'  },
+          { top:'8%',  left:'35%' },
+          { top:'18%', left:'60%' },
+          { top:'6%',  left:'75%' },
+          { top:'28%', left:'18%' },
+          { top:'22%', left:'88%' },
+          { top:'35%', left:'45%' },
+        ].map((pos, i) => (
+          <span
+            key={i}
+            className="deco-star"
+            style={{ top: pos.top, left: pos.left, animationDelay: `${i * 1.1}s` }}
+            aria-hidden="true"
+          >
+            ✶
+          </span>
+        ))}
+        {children}
+      </body>
+
     </html>
   );
 }

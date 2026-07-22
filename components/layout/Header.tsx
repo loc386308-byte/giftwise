@@ -15,10 +15,10 @@ export default function Header() {
         left: 0,
         right: 0,
         zIndex: 100,
-        background: 'rgba(251, 249, 246, 0.85)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(229, 231, 235, 0.6)',
+        background: 'rgba(26,21,53,0.75)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(201,187,232,0.18)',
         padding: '0 1.5rem',
         height: '60px',
         display: 'flex',
@@ -27,27 +27,33 @@ export default function Header() {
       }}
     >
       <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={{ fontSize: '1.5rem' }}>🎁</span>
+        {/* Cat mascot mini */}
+        <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>🐱</span>
         <span
           style={{
-            fontWeight: 800,
-            fontSize: '1.25rem',
-            letterSpacing: '-0.03em',
+            fontFamily: "'Comfortaa', 'Nunito', sans-serif",
+            fontWeight: 700,
+            fontSize: '1.2rem',
+            background: 'linear-gradient(135deg, #c9bbe8 0%, #9bb5e8 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            letterSpacing: '0.01em',
           }}
-          className="gradient-text"
         >
           GiftWise
         </span>
+        <span style={{ fontSize: '0.7rem', color: 'rgba(201,187,232,0.6)', marginLeft: '-2px' }}>✦</span>
       </Link>
 
       {!isHome && (
-        <Link href="/" className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.875rem' }}>
+        <Link href="/" className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.825rem' }}>
           ← Về trang chủ
         </Link>
       )}
 
       {isHome && (
-        <Link href="/quiz" className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}>
+        <Link href="/quiz" className="btn-primary" style={{ padding: '0.45rem 1.25rem', fontSize: '0.85rem' }}>
           Bắt đầu ✨
         </Link>
       )}

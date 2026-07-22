@@ -4,54 +4,32 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 
-// FAQ structured data (rendered as JSON-LD script in JSX)
 const FAQ_JSONLD = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: [
-    {
-      '@type': 'Question',
-      name: 'GiftWise hoạt động như thế nào?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Bạn trả lời 8 câu hỏi về dịp tặng, người nhận, cung hoàng đạo, tính cách, sở thích và ngân sách. AI sẽ phân tích và gợi ý 9 món quà phù hợp nhất kèm giá và nơi mua.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'GiftWise có miễn phí không?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Hoàn toàn miễn phí, không cần đăng ký tài khoản. Bạn chỉ mất khoảng 2 phút để hoàn thành quiz và nhận gợi ý.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'AI gợi ý quà có chính xác không?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Engine gợi ý của GiftWise phân tích kết hợp 8 yếu tố: cung hoàng đạo, tính cách, sở thích, tuổi, giới tính, mối quan hệ, dịp và ngân sách. Kết quả được cá nhân hóa cao và phù hợp với nhiều trường hợp thực tế.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'Tôi có thể mua quà ở đâu sau khi nhận gợi ý?',
-      acceptedAnswer: { '@type': 'Answer', text: 'GiftWise cung cấp 2 kênh mua: Online (Shopee, TikTok Shop) với lọc giá và đánh giá; và Offline với bản đồ cửa hàng gần vị trí GPS của bạn.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'GiftWise có hỗ trợ nhiều ngân sách không?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Có — GiftWise hỗ trợ 5 mức ngân sách từ dưới 100,000đ đến trên 1,000,000đ. Tất cả gợi ý đều được lọc chặt theo mức bạn chọn.' },
-    },
+    { '@type': 'Question', name: 'GiftWise hoạt động như thế nào?', acceptedAnswer: { '@type': 'Answer', text: 'Bạn trả lời 8 câu hỏi về dịp tặng, người nhận, cung hoàng đạo, tính cách, sở thích và ngân sách. AI sẽ phân tích và gợi ý 9 món quà phù hợp nhất kèm giá và nơi mua.' } },
+    { '@type': 'Question', name: 'GiftWise có miễn phí không?', acceptedAnswer: { '@type': 'Answer', text: 'Hoàn toàn miễn phí, không cần đăng ký tài khoản. Bạn chỉ mất khoảng 2 phút để hoàn thành quiz và nhận gợi ý.' } },
+    { '@type': 'Question', name: 'AI gợi ý quà có chính xác không?', acceptedAnswer: { '@type': 'Answer', text: 'Engine gợi ý của GiftWise phân tích kết hợp 8 yếu tố: cung hoàng đạo, tính cách, sở thích, tuổi, giới tính, mối quan hệ, dịp và ngân sách.' } },
+    { '@type': 'Question', name: 'Tôi có thể mua quà ở đâu?', acceptedAnswer: { '@type': 'Answer', text: 'GiftWise cung cấp 2 kênh mua: Online (Shopee, TikTok Shop) và Offline với bản đồ cửa hàng gần vị trí GPS của bạn.' } },
   ],
 };
 
 const OCCASIONS = [
-  { id: 'birthday', label: 'Sinh nhật', emoji: '🎂', color: '#FF6B9D' },
-  { id: 'valentine', label: 'Valentine', emoji: '💝', color: '#EC4899' },
-  { id: 'womensday', label: '8/3', emoji: '🌸', color: '#F472B6' },
-  { id: 'christmas', label: 'Giáng sinh', emoji: '🎄', color: '#10B981' },
-  { id: 'graduation', label: 'Ra trường', emoji: '🎓', color: '#6366F1' },
-  { id: 'promotion', label: 'Thăng chức', emoji: '🚀', color: '#F59E0B' },
-  { id: 'anniversary', label: 'Kỷ niệm', emoji: '💍', color: '#8B5CF6' },
-  { id: 'other', label: 'Dịp khác', emoji: '🎁', color: '#14B8A6' },
+  { id: 'birthday',    label: 'Sinh nhật',   emoji: '🎂', glow: 'rgba(212,168,232,0.4)' },
+  { id: 'valentine',   label: 'Valentine',   emoji: '💝', glow: 'rgba(242,196,208,0.4)' },
+  { id: 'womensday',   label: '8/3',         emoji: '🌸', glow: 'rgba(212,168,232,0.35)' },
+  { id: 'christmas',   label: 'Giáng sinh',  emoji: '🎄', glow: 'rgba(184,232,217,0.4)' },
+  { id: 'graduation',  label: 'Ra trường',   emoji: '🎓', glow: 'rgba(155,181,232,0.4)' },
+  { id: 'promotion',   label: 'Thăng chức',  emoji: '🚀', glow: 'rgba(255,224,130,0.4)' },
+  { id: 'anniversary', label: 'Kỷ niệm',    emoji: '💍', glow: 'rgba(201,187,232,0.4)' },
+  { id: 'other',       label: 'Dịp khác',   emoji: '🎁', glow: 'rgba(184,169,217,0.4)' },
 ];
 
 const STEPS = [
-  { emoji: '💬', label: 'Trả lời 8 câu ngắn' },
-  { emoji: '🤖', label: 'AI phân tích & gợi ý' },
-  { emoji: '🛍️', label: 'Tìm nơi mua ngay' },
+  { emoji: '💬', label: 'Trả lời 8 câu ngắn', sub: 'Về người nhận, dịp, ngân sách...' },
+  { emoji: '🤖', label: 'AI phân tích & gợi ý', sub: 'Claude AI chọn 6 món hoàn hảo nhất' },
+  { emoji: '🛍️', label: 'Tìm nơi mua ngay', sub: 'Online Shopee/TikTok hoặc cửa hàng gần bạn' },
 ];
 
 const TESTIMONIALS = [
@@ -78,12 +56,16 @@ const TESTIMONIALS = [
   },
 ];
 
+// Reusable pastel section divider
+const SectionDivider = () => (
+  <div style={{ textAlign: 'center', padding: '0.5rem 0', lineHeight: 1, color: 'rgba(201,187,232,0.35)', letterSpacing: '0.5rem', fontSize: '0.8rem' }}>
+    ✦ ✧ ✦ ✧ ✦
+  </div>
+);
+
 export default function HomePage() {
   const router = useRouter();
-
-  const handleOccasionClick = (occasionId: string) => {
-    router.push(`/quiz?occasion=${occasionId}`);
-  };
+  const handleOccasionClick = (id: string) => router.push(`/quiz?occasion=${id}`);
 
   return (
     <>
@@ -91,9 +73,10 @@ export default function HomePage() {
       <Header />
 
       <main style={{ paddingTop: '60px' }}>
-        {/* ==============================
-            HERO SECTION
-           ============================== */}
+
+        {/* ══════════════════════════════════════════
+            HERO
+        ══════════════════════════════════════════ */}
         <section
           style={{
             minHeight: '92vh',
@@ -101,139 +84,102 @@ export default function HomePage() {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '4rem 1.5rem 2rem',
+            padding: '4rem 1.5rem 3rem',
             textAlign: 'center',
             position: 'relative',
-            overflow: 'hidden',
           }}
         >
-          {/* Background blobs */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '10%',
-              left: '-10%',
-              width: '400px',
-              height: '400px',
-              background: 'radial-gradient(circle, rgba(255,107,157,0.15) 0%, transparent 70%)',
-              borderRadius: '50%',
-              filter: 'blur(40px)',
-              pointerEvents: 'none',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '10%',
-              right: '-10%',
-              width: '350px',
-              height: '350px',
-              background: 'radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%)',
-              borderRadius: '50%',
-              filter: 'blur(40px)',
-              pointerEvents: 'none',
-            }}
-          />
+          {/* Glow blobs */}
+          <div style={{ position: 'absolute', top: '15%', left: '10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(184,169,217,0.12) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(50px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '20%', right: '8%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(242,196,208,0.12) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(50px)', pointerEvents: 'none' }} />
 
-          {/* Badge */}
+          {/* Floating cat mascot */}
+          <div
+            className="float-animation"
+            style={{ fontSize: '5rem', marginBottom: '1.5rem', lineHeight: 1, filter: 'drop-shadow(0 8px 24px rgba(184,169,217,0.4))' }}
+            aria-hidden="true"
+          >
+            🐱
+          </div>
+
+          {/* AI badge */}
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.5rem',
-              background: 'linear-gradient(135deg, #FFF1F8, #F5F3FF)',
-              border: '1px solid rgba(255,107,157,0.25)',
+              background: 'rgba(212,168,232,0.15)',
+              border: '1px solid rgba(212,168,232,0.3)',
+              backdropFilter: 'blur(12px)',
               borderRadius: '999px',
-              padding: '0.4rem 1rem',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              color: '#C084FC',
-              marginBottom: '1.5rem',
+              padding: '0.4rem 1.1rem',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              color: 'var(--lavender-light)',
+              marginBottom: '1.75rem',
+              letterSpacing: '0.02em',
             }}
           >
-            <span>✨</span>
+            <span>✦</span>
             <span>Powered by Claude AI · Hoàn toàn miễn phí</span>
+            <span>✦</span>
           </div>
 
           {/* Headline */}
           <h1
             style={{
-              fontSize: 'clamp(2rem, 6vw, 4rem)',
-              fontWeight: 900,
-              lineHeight: 1.1,
-              letterSpacing: '-0.03em',
+              fontFamily: "'Comfortaa', 'Nunito', sans-serif",
+              fontSize: 'clamp(2rem, 6vw, 3.75rem)',
+              fontWeight: 700,
+              lineHeight: 1.15,
               marginBottom: '1.25rem',
-              maxWidth: '700px',
+              maxWidth: '680px',
+              color: 'var(--cream)',
             }}
           >
-            Hết lo tặng quà sai —<br />
-            <span className="gradient-text">để AI gợi ý cho bạn</span>
+            Hết lo tặng quà sai —{' '}
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #d4a8e8 0%, #9bb5e8 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              để AI gợi ý cho bạn ✨
+            </span>
           </h1>
 
           <p
             style={{
-              fontSize: 'clamp(1rem, 2.5vw, 1.2rem)',
+              fontSize: 'clamp(0.95rem, 2.5vw, 1.15rem)',
               color: 'var(--color-text-muted)',
-              maxWidth: '520px',
-              marginBottom: '2.5rem',
-              lineHeight: 1.7,
+              maxWidth: '500px',
+              marginBottom: '2.75rem',
+              lineHeight: 1.75,
             }}
           >
-            Trả lời 8 câu hỏi đơn giản, AI sẽ gợi ý 6 món quà được cá nhân hóa —
-            kèm theo giá và nơi mua ngay trên Shopee, TikTok Shop.
+            Trả lời 8 câu hỏi đơn giản — AI phân tích cung hoàng đạo, tính cách & ngân sách để gợi ý 6 món quà hoàn hảo kèm nơi mua.
           </p>
 
-          {/* CTA Buttons */}
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '1rem' }}>
+          {/* CTA */}
+          <div style={{ display: 'flex', gap: '0.875rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '1rem' }}>
             <Link href="/quiz" className="btn-primary pulse-glow" style={{ fontSize: '1.05rem', padding: '1rem 2.5rem' }}>
               🎁 Bắt đầu gợi ý quà
             </Link>
             <a
               href="#occasions"
               className="btn-secondary"
-              style={{ fontSize: '1.05rem', padding: '1rem 2rem' }}
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('occasions')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              style={{ fontSize: '1rem', padding: '1rem 1.75rem' }}
+              onClick={(e) => { e.preventDefault(); document.getElementById('occasions')?.scrollIntoView({ behavior: 'smooth' }); }}
             >
-              Xem theo dịp ↓
+              Chọn theo dịp 🌙
             </a>
           </div>
 
-          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: '0.5rem' }}>
-            Miễn phí · Không cần đăng ký · Chỉ mất 2 phút
+          <p style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', marginTop: '0.25rem', letterSpacing: '0.04em' }}>
+            ✧ Miễn phí · Không cần đăng ký · Chỉ mất 2 phút ✧
           </p>
-
-          {/* Floating emoji decoration */}
-          <div
-            className="float-animation"
-            style={{
-              position: 'absolute',
-              top: '20%',
-              right: '8%',
-              fontSize: '3rem',
-              opacity: 0.7,
-              animationDelay: '0s',
-              display: 'none',
-            }}
-          >
-            🎁
-          </div>
-          <div
-            className="float-animation"
-            style={{
-              position: 'absolute',
-              bottom: '25%',
-              left: '6%',
-              fontSize: '2.5rem',
-              opacity: 0.6,
-              animationDelay: '1.5s',
-              display: 'none',
-            }}
-          >
-            💝
-          </div>
 
           {/* Scroll indicator */}
           <div
@@ -247,38 +193,39 @@ export default function HomePage() {
               alignItems: 'center',
               gap: '0.25rem',
               color: 'var(--color-text-light)',
-              fontSize: '0.75rem',
-              animation: 'float 2s ease-in-out infinite',
+              fontSize: '0.72rem',
+              animation: 'float 2.5s ease-in-out infinite',
+              letterSpacing: '0.06em',
             }}
           >
-            <span>Cuộn xuống</span>
-            <span style={{ fontSize: '1.2rem' }}>↓</span>
+            <span>cuộn xuống</span>
+            <span style={{ fontSize: '1.1rem' }}>↓</span>
           </div>
         </section>
 
-        {/* ==============================
-            OCCASIONS SECTION
-           ============================== */}
-        <section
-          id="occasions"
-          style={{
-            padding: '5rem 1.5rem',
-            background: 'linear-gradient(135deg, #FFF1F8 0%, #F5F3FF 100%)',
-          }}
-        >
+        <SectionDivider />
+
+        {/* ══════════════════════════════════════════
+            OCCASIONS
+        ══════════════════════════════════════════ */}
+        <section id="occasions" style={{ padding: '5rem 1.5rem' }}>
           <div className="container-max">
             <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
               <h2
                 style={{
+                  fontFamily: "'Comfortaa', 'Nunito', sans-serif",
                   fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-                  fontWeight: 800,
+                  fontWeight: 700,
                   marginBottom: '0.75rem',
+                  color: 'var(--cream)',
                 }}
               >
                 Chọn nhanh theo{' '}
-                <span className="gradient-text">dịp lễ</span>
+                <span style={{ background: 'linear-gradient(135deg, #d4a8e8, #9bb5e8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  dịp lễ 🌙
+                </span>
               </h2>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem' }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
                 Bấm vào dịp bạn cần → tự động điền vào quiz
               </p>
             </div>
@@ -286,52 +233,49 @@ export default function HomePage() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                gap: '1rem',
-                maxWidth: '700px',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+                gap: '0.875rem',
+                maxWidth: '680px',
                 margin: '0 auto',
               }}
             >
-              {OCCASIONS.map((occasion) => (
+              {OCCASIONS.map((occ) => (
                 <button
-                  key={occasion.id}
-                  onClick={() => handleOccasionClick(occasion.id)}
+                  key={occ.id}
+                  onClick={() => handleOccasionClick(occ.id)}
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '0.625rem',
-                    padding: '1.25rem 1rem',
+                    gap: '0.6rem',
+                    padding: '1.25rem 0.75rem',
                     borderRadius: '20px',
-                    border: '2px solid transparent',
-                    background: 'white',
+                    border: '1.5px solid rgba(201,187,232,0.2)',
+                    background: 'rgba(255,255,255,0.05)',
+                    backdropFilter: 'blur(12px)',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 2px 12px rgba(26,26,46,0.06)',
-                    fontFamily: 'inherit',
+                    transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+                    fontFamily: "'Nunito', sans-serif",
+                    color: 'var(--color-text)',
                   }}
                   onMouseEnter={(e) => {
                     const el = e.currentTarget;
-                    el.style.borderColor = occasion.color;
-                    el.style.transform = 'translateY(-4px)';
-                    el.style.boxShadow = `0 8px 24px ${occasion.color}30`;
+                    el.style.borderColor = 'rgba(212,168,232,0.5)';
+                    el.style.transform = 'translateY(-4px) scale(1.04)';
+                    el.style.boxShadow = `0 8px 28px ${occ.glow}`;
+                    el.style.background = 'rgba(212,168,232,0.12)';
                   }}
                   onMouseLeave={(e) => {
                     const el = e.currentTarget;
-                    el.style.borderColor = 'transparent';
-                    el.style.transform = 'translateY(0)';
-                    el.style.boxShadow = '0 2px 12px rgba(26,26,46,0.06)';
+                    el.style.borderColor = 'rgba(201,187,232,0.2)';
+                    el.style.transform = 'translateY(0) scale(1)';
+                    el.style.boxShadow = 'none';
+                    el.style.background = 'rgba(255,255,255,0.05)';
                   }}
                 >
-                  <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>{occasion.emoji}</span>
-                  <span
-                    style={{
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
-                      color: 'var(--color-text)',
-                    }}
-                  >
-                    {occasion.label}
+                  <span style={{ fontSize: '2.25rem', lineHeight: 1 }}>{occ.emoji}</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--lavender-light)' }}>
+                    {occ.label}
                   </span>
                 </button>
               ))}
@@ -339,26 +283,30 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ==============================
+        <SectionDivider />
+
+        {/* ══════════════════════════════════════════
             HOW IT WORKS
-           ============================== */}
-        <section style={{ padding: '5rem 1.5rem', background: 'var(--color-bg)' }}>
+        ══════════════════════════════════════════ */}
+        <section style={{ padding: '5rem 1.5rem' }}>
           <div className="container-max">
             <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
               <h2
                 style={{
+                  fontFamily: "'Comfortaa', 'Nunito', sans-serif",
                   fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-                  fontWeight: 800,
+                  fontWeight: 700,
                   marginBottom: '0.75rem',
+                  color: 'var(--cream)',
                 }}
               >
                 Chỉ{' '}
-                <span className="gradient-text">3 bước</span>
-                {' '}đơn giản
+                <span style={{ background: 'linear-gradient(135deg, #d4a8e8, #9bb5e8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  3 bước
+                </span>
+                {' '}đơn giản ✦
               </h2>
-              <p style={{ color: 'var(--color-text-muted)' }}>
-                Không cần tài khoản, không cần thẻ tín dụng
-              </p>
+              <p style={{ color: 'var(--color-text-muted)' }}>Không cần tài khoản · không cần thẻ tín dụng</p>
             </div>
 
             <div
@@ -366,21 +314,17 @@ export default function HomePage() {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                 gap: '1.5rem',
-                maxWidth: '800px',
+                maxWidth: '820px',
                 margin: '0 auto',
               }}
             >
-              {STEPS.map((step, index) => (
+              {STEPS.map((step, i) => (
                 <div
-                  key={index}
-                  className="card"
-                  style={{
-                    padding: '2rem 1.5rem',
-                    textAlign: 'center',
-                    position: 'relative',
-                    overflow: 'visible',
-                  }}
+                  key={i}
+                  className="card card-lavender"
+                  style={{ padding: '2rem 1.5rem', textAlign: 'center', position: 'relative', overflow: 'visible' }}
                 >
+                  {/* Step number bubble */}
                   <div
                     style={{
                       position: 'absolute',
@@ -389,54 +333,60 @@ export default function HomePage() {
                       transform: 'translateX(-50%)',
                       width: '28px',
                       height: '28px',
-                      background: 'var(--gradient-main)',
+                      background: 'linear-gradient(135deg, #c9a8e8, #9bb0e8)',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'white',
+                      color: '#1a1535',
                       fontWeight: 800,
-                      fontSize: '0.8rem',
+                      fontSize: '0.78rem',
+                      boxShadow: '0 4px 12px rgba(184,169,217,0.5)',
                     }}
                   >
-                    {index + 1}
+                    {i + 1}
                   </div>
-                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{step.emoji}</div>
-                  <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)' }}>
+                  <div style={{ fontSize: '2.75rem', marginBottom: '0.875rem' }}>{step.emoji}</div>
+                  <p style={{ fontFamily: "'Comfortaa','Nunito',sans-serif", fontWeight: 700, fontSize: '1rem', color: 'var(--cream)', marginBottom: '0.4rem' }}>
                     {step.label}
+                  </p>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', lineHeight: 1.55 }}>
+                    {step.sub}
                   </p>
                 </div>
               ))}
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-              <Link href="/quiz" className="btn-primary" style={{ fontSize: '1.1rem', padding: '1rem 2.5rem' }}>
+              <Link href="/quiz" className="btn-primary" style={{ fontSize: '1.05rem', padding: '1rem 2.5rem' }}>
                 Thử ngay — Miễn phí 🎉
               </Link>
             </div>
           </div>
         </section>
 
-        {/* ==============================
+        <SectionDivider />
+
+        {/* ══════════════════════════════════════════
             TESTIMONIALS
-           ============================== */}
-        <section
-          style={{
-            padding: '5rem 1.5rem',
-            background: 'linear-gradient(135deg, #F5F3FF 0%, #FFF1F8 100%)',
-          }}
-        >
+        ══════════════════════════════════════════ */}
+        <section style={{ padding: '5rem 1.5rem' }}>
           <div className="container-max">
             <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
               <h2
                 style={{
+                  fontFamily: "'Comfortaa', 'Nunito', sans-serif",
                   fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-                  fontWeight: 800,
+                  fontWeight: 700,
                   marginBottom: '0.75rem',
+                  color: 'var(--cream)',
                 }}
               >
                 Người dùng nói gì về{' '}
-                <span className="gradient-text">GiftWise</span>?
+                <span style={{ background: 'linear-gradient(135deg, #f2c4d0, #d4a8e8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  GiftWise
+                </span>
+                ? 🌟
               </h2>
             </div>
 
@@ -444,48 +394,36 @@ export default function HomePage() {
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: '1.5rem',
+                gap: '1.25rem',
               }}
             >
-              {TESTIMONIALS.map((t, index) => (
-                <div
-                  key={index}
-                  className="card"
-                  style={{ padding: '1.75rem' }}
-                >
-                  {/* Stars */}
-                  <div className="stars" style={{ marginBottom: '1rem', fontSize: '1rem' }}>
-                    {'⭐'.repeat(t.rating)}
+              {TESTIMONIALS.map((t, i) => (
+                <div key={i} className="card card-blush" style={{ padding: '1.75rem' }}>
+                  <div style={{ marginBottom: '0.875rem', fontSize: '1rem', color: '#ffe082', letterSpacing: '2px' }}>
+                    {'★'.repeat(t.rating)}
                   </div>
-                  <p
-                    style={{
-                      color: 'var(--color-text)',
-                      fontSize: '0.95rem',
-                      lineHeight: 1.7,
-                      marginBottom: '1.25rem',
-                      fontStyle: 'italic',
-                    }}
-                  >
-                    "{t.text}"
+                  <p style={{ color: 'var(--color-text)', fontSize: '0.92rem', lineHeight: 1.75, marginBottom: '1.25rem', fontStyle: 'italic' }}>
+                    &ldquo;{t.text}&rdquo;
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div
                       style={{
-                        width: '40px',
-                        height: '40px',
-                        background: 'linear-gradient(135deg, #FFF1F8, #F5F3FF)',
+                        width: '42px',
+                        height: '42px',
+                        background: 'rgba(212,168,232,0.2)',
+                        border: '1px solid rgba(212,168,232,0.3)',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '1.5rem',
+                        fontSize: '1.4rem',
                       }}
                     >
                       {t.avatar}
                     </div>
                     <div>
-                      <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{t.name}</p>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{t.role}</p>
+                      <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--cream)' }}>{t.name}</p>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>{t.role}</p>
                     </div>
                   </div>
                 </div>
@@ -494,76 +432,77 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ==============================
+        <SectionDivider />
+
+        {/* ══════════════════════════════════════════
             FINAL CTA
-           ============================== */}
-        <section
-          style={{
-            padding: '5rem 1.5rem',
-            textAlign: 'center',
-            background: 'var(--color-bg)',
-          }}
-        >
+        ══════════════════════════════════════════ */}
+        <section style={{ padding: '5rem 1.5rem' }}>
           <div className="container-max">
             <div
               style={{
-                background: 'var(--gradient-main)',
-                borderRadius: '32px',
+                background: 'linear-gradient(135deg, rgba(184,169,217,0.2) 0%, rgba(155,181,232,0.15) 100%)',
+                border: '1px solid rgba(201,187,232,0.25)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '36px',
                 padding: 'clamp(2.5rem, 6vw, 4rem) 2rem',
+                textAlign: 'center',
                 position: 'relative',
                 overflow: 'hidden',
               }}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.05\'%3E%3Ccircle cx=\'30\' cy=\'30\' r=\'2\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-                  pointerEvents: 'none',
-                }}
-              />
+              {/* Sparkle overlay */}
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                {['10%', '30%', '55%', '75%', '90%'].map((left, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      position: 'absolute',
+                      top: `${20 + i * 12}%`,
+                      left,
+                      color: 'rgba(255,224,130,0.3)',
+                      fontSize: '14px',
+                      animation: `deco-float ${6 + i}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.8}s`,
+                    }}
+                  >
+                    ✦
+                  </span>
+                ))}
+              </div>
+
+              {/* Cat sleeping */}
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }} aria-hidden="true">😸</div>
+
               <h2
                 style={{
-                  fontSize: 'clamp(1.75rem, 4vw, 3rem)',
-                  fontWeight: 900,
-                  color: 'white',
+                  fontFamily: "'Comfortaa', 'Nunito', sans-serif",
+                  fontSize: 'clamp(1.75rem, 4vw, 2.75rem)',
+                  fontWeight: 700,
+                  color: 'var(--cream)',
                   marginBottom: '1rem',
-                  letterSpacing: '-0.02em',
                 }}
               >
                 Sẵn sàng tìm món quà hoàn hảo? 🎁
               </h2>
               <p
                 style={{
-                  color: 'rgba(255,255,255,0.85)',
-                  fontSize: '1.1rem',
+                  color: 'var(--color-text-muted)',
+                  fontSize: '1.05rem',
                   marginBottom: '2rem',
-                  maxWidth: '500px',
+                  maxWidth: '480px',
                   margin: '0 auto 2rem',
-                  lineHeight: 1.7,
+                  lineHeight: 1.75,
                 }}
               >
                 Chỉ 2 phút trả lời quiz — AI sẽ gợi ý 6 món quà được cá nhân hóa riêng cho người bạn yêu thương.
               </p>
-              <Link
-                href="/quiz"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  background: 'white',
-                  color: '#FF6B9D',
-                  fontWeight: 700,
-                  fontSize: '1.1rem',
-                  padding: '1rem 2.5rem',
-                  borderRadius: '50px',
-                  textDecoration: 'none',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                  transition: 'all 0.2s ease',
-                }}
-              >
+              <Link href="/quiz" className="btn-primary" style={{ fontSize: '1.1rem', padding: '1.1rem 2.75rem' }}>
                 ✨ Bắt đầu ngay — Miễn phí
               </Link>
+              <p style={{ marginTop: '1.25rem', fontSize: '0.78rem', color: 'var(--color-text-light)', letterSpacing: '0.04em' }}>
+                ✦ Không cần đăng ký · Không lưu thông tin cá nhân ✦
+              </p>
             </div>
           </div>
         </section>
@@ -572,19 +511,31 @@ export default function HomePage() {
         <footer
           style={{
             padding: '2rem 1.5rem',
-            borderTop: '1px solid var(--color-border)',
+            borderTop: '1px solid rgba(201,187,232,0.12)',
             textAlign: 'center',
             color: 'var(--color-text-light)',
-            fontSize: '0.875rem',
+            fontSize: '0.82rem',
           }}
         >
-          <p>
-            Made with ❤️ by{' '}
-            <span className="gradient-text" style={{ fontWeight: 700 }}>GiftWise</span>
+          <p style={{ marginBottom: '0.5rem' }}>
+            Made with 🐱 by{' '}
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #c9bbe8, #9bb5e8)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                fontWeight: 700,
+              }}
+            >
+              GiftWise
+            </span>
             {' '}· Powered by Claude AI
           </p>
-          <p style={{ marginTop: '0.5rem' }}>
-            <Link href="/blog" style={{ color: 'var(--color-text-muted)', textDecoration: 'none', fontSize: '0.8rem' }}>📚 Blog ý tưởng quà tặng</Link>
+          <p>
+            <Link href="/blog" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+              📚 Blog ý tưởng quà tặng
+            </Link>
           </p>
         </footer>
       </main>
