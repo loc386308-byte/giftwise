@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Product } from '@/types';
-import { AIService } from '@/lib/services/aiService';
+import { AIService, resolveProductImage } from '@/lib/services/aiService';
 
 // ─── Rate limiting for search-online (30 requests/hour per IP) ─────────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -597,7 +597,7 @@ export async function GET(request: NextRequest) {
         name: item.name,
         price: item.price,
         originalPrice: item.originalPrice,
-        imageUrl: item.imageUrl,
+        imageUrl: resolveProductImage(item.name, item.imageUrl),
         rating: item.rating,
         reviewCount: item.reviewCount,
         sold: item.sold,
