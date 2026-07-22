@@ -72,38 +72,78 @@ const ZODIAC_OPTIONS = [
   { id: 'Song Ngư ♓',  name: 'Song Ngư',  symbol: '♓', emoji: '🐟', color: 'linear-gradient(135deg,#f77062,#fe5196)' },
 ];
 
-const PERSONALITY_OPTIONS = [
-  { id: 'hài hước', label: 'Hài hước', emoji: '😄' },
-  { id: 'trầm tính', label: 'Trầm tính', emoji: '🧘' },
-  { id: 'hướng nội', label: 'Hướng nội', emoji: '🏠' },
-  { id: 'hướng ngoại', label: 'Hướng ngoại', emoji: '🎉' },
-  { id: 'năng động', label: 'Năng động', emoji: '⚡' },
-  { id: 'lãng mạn', label: 'Lãng mạn', emoji: '🌹' },
-  { id: 'thực tế', label: 'Thực tế', emoji: '🎯' },
-  { id: 'sáng tạo', label: 'Sáng tạo', emoji: '🎨' },
-  { id: 'đam mê công nghệ', label: 'Yêu công nghệ', emoji: '💻' },
-  { id: 'yêu làm đẹp', label: 'Yêu làm đẹp', emoji: '💄' },
-  { id: 'mê ăn uống', label: 'Mê ăn uống', emoji: '🍜' },
-  { id: 'thích xa hoa', label: 'Thích xa hoa', emoji: '✨' },
-  { id: 'chăm sóc bản thân', label: 'Tự chăm sóc', emoji: '🛁' },
-  { id: 'yêu thiên nhiên', label: 'Yêu thiên nhiên', emoji: '🌿' },
+const PERSONALITY_GROUPS = [
+  {
+    groupTitle: '✨ Cảm Xúc & Thần Thái',
+    items: [
+      { id: 'hài hước', label: 'Hài hước & Vui vẻ', emoji: '😄' },
+      { id: 'lãng mạn', label: 'Lãng mạn & Tình cảm', emoji: '🌹' },
+      { id: 'hướng nội', label: 'Hướng nội & Sâu sắc', emoji: '🏠' },
+      { id: 'hướng ngoại', label: 'Hướng ngoại & Thân thiện', emoji: '🎉' },
+      { id: 'trầm tính', label: 'Trầm tính & Nhẹ nhàng', emoji: '🧘' },
+      { id: 'lạc quan', label: 'Lạc quan & Yêu đời', emoji: '☀️' },
+    ],
+  },
+  {
+    groupTitle: '🎯 Phong Cách & Tư Duy',
+    items: [
+      { id: 'năng động', label: 'Năng động & Nhiệt huyết', emoji: '⚡' },
+      { id: 'thực tế', label: 'Thực tế & Chu đáo', emoji: '🎯' },
+      { id: 'sáng tạo', label: 'Sáng tạo & Bay bổng', emoji: '🎨' },
+      { id: 'tỉ mỉ', label: 'Tỉ mỉ & Cẩn thận', emoji: '🧠' },
+      { id: 'phiêu lưu', label: 'Phiêu lưu & Khám phá', emoji: '🎪' },
+      { id: 'tinh tế', label: 'Đẳng cấp & Tinh tế', emoji: '👑' },
+    ],
+  },
+  {
+    groupTitle: '🌱 Lối Sống & Thói Quen',
+    items: [
+      { id: 'đam mê công nghệ', label: 'Đam mê công nghệ', emoji: '💻' },
+      { id: 'yêu làm đẹp', label: 'Yêu chăm sóc bản thân', emoji: '💄' },
+      { id: 'yêu thiên nhiên', label: 'Yêu thiên nhiên & Cây cối', emoji: '🌿' },
+      { id: 'thích chill', label: 'Thích bình yên & Chill', emoji: '☕' },
+      { id: 'thích thời trang', label: 'Thích thời trang & Trendy', emoji: '🛍️' },
+      { id: 'yêu tri thức', label: 'Yêu tri thức & Tự học', emoji: '📚' },
+    ],
+  },
 ];
 
-const INTEREST_OPTIONS = [
-  { id: 'đọc sách', label: 'Đọc sách', emoji: '📚' },
-  { id: 'du lịch', label: 'Du lịch', emoji: '✈️' },
-  { id: 'gaming', label: 'Gaming', emoji: '🎮' },
-  { id: 'làm đẹp', label: 'Làm đẹp', emoji: '💅' },
-  { id: 'thể thao', label: 'Thể thao', emoji: '⚽' },
-  { id: 'nấu ăn', label: 'Nấu ăn', emoji: '👨‍🍳' },
-  { id: 'âm nhạc', label: 'Âm nhạc', emoji: '🎵' },
-  { id: 'thời trang', label: 'Thời trang', emoji: '👗' },
-  { id: 'nhiếp ảnh', label: 'Nhiếp ảnh', emoji: '📷' },
-  { id: 'phim ảnh', label: 'Xem phim', emoji: '🎬' },
-  { id: 'yoga', label: 'Yoga / Pilates', emoji: '🧘' },
-  { id: 'gym', label: 'Gym / Fitness', emoji: '💪' },
-  { id: 'nghệ thuật', label: 'Nghệ thuật', emoji: '🎭' },
-  { id: 'mỹ phẩm', label: 'Skincare', emoji: '🧴' },
+const INTEREST_GROUPS = [
+  {
+    groupTitle: '🎮 Giải Trí & Lối Sống',
+    items: [
+      { id: 'đọc sách', label: 'Đọc sách & Viết lách', emoji: '📚' },
+      { id: 'gaming', label: 'Gaming & Esport', emoji: '🎮' },
+      { id: 'âm nhạc', label: 'Âm nhạc & Concert', emoji: '🎵' },
+      { id: 'xem phim', label: 'Xem phim & Series', emoji: '🎬' },
+      { id: 'du lịch', label: 'Du lịch & Phượt', emoji: '✈️' },
+      { id: 'cafe', label: 'Cafe & Thư giãn', emoji: '☕' },
+    ],
+  },
+  {
+    groupTitle: '💄 Làm Đẹp, Thời Trang & Thẩm Mỹ',
+    items: [
+      { id: 'mỹ phẩm', label: 'Skincare & Mỹ phẩm', emoji: '🧴' },
+      { id: 'thời trang', label: 'Thời trang & Outfit', emoji: '👗' },
+      { id: 'trang sức', label: 'Trang sức & Phụ kiện', emoji: '💎' },
+      { id: 'nhiếp ảnh', label: 'Nhiếp ảnh & Chụp hình', emoji: '📷' },
+      { id: 'nghệ thuật', label: 'Vẽ tranh & Thủ công', emoji: '🎨' },
+      { id: 'decor', label: 'Decor phòng & Nhà cửa', emoji: '🛋️' },
+    ],
+  },
+  {
+    groupTitle: '🏃 Thể Thao, Sức Khỏe & Ẩm Thực',
+    items: [
+      { id: 'gym', label: 'Gym & Fitness', emoji: '🏋️' },
+      { id: 'yoga', label: 'Yoga & Pilates', emoji: '🧘' },
+      { id: 'thể thao', label: 'Bóng đá & Thể thao', emoji: '⚽' },
+      { id: 'chạy bộ', label: 'Chạy bộ & Marathon', emoji: '🏃' },
+      { id: 'nấu ăn', label: 'Nấu ăn & Làm bánh', emoji: '👨‍🍳' },
+      { id: 'thưởng trà', label: 'Thưởng trà & Matcha', emoji: '🍵' },
+      { id: 'thú cưng', label: 'Chăm sóc thú cưng', emoji: '🐾' },
+      { id: 'làm vườn', label: 'Trồng cây & Làm vườn', emoji: '🌱' },
+    ],
+  },
 ];
 
 const BUDGET_OPTIONS = [
@@ -491,31 +531,48 @@ function QuizInner() {
 
       case 5:
         return (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.625rem' }}>
-            {PERSONALITY_OPTIONS.map((p) => {
-              const selected = (answers.personality || []).includes(p.id);
-              const maxReached = (answers.personality || []).length >= 3;
-              return (
-                <Chip
-                  key={p.id}
-                  emoji={p.emoji}
-                  label={p.label}
-                  selected={selected}
-                  disabled={maxReached && !selected}
-                  onClick={() => {
-                    const current = answers.personality || [];
-                    if (selected) {
-                      setAnswer('personality', current.filter((x) => x !== p.id));
-                    } else if (current.length < 3) {
-                      setAnswer('personality', [...current, p.id]);
-                    }
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {PERSONALITY_GROUPS.map((group) => (
+              <div key={group.groupTitle} style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                <span
+                  style={{
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    color: 'var(--lavender-light)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
                   }}
-                />
-              );
-            })}
+                >
+                  {group.groupTitle}
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.625rem' }}>
+                  {group.items.map((p) => {
+                    const selected = (answers.personality || []).includes(p.id);
+                    const maxReached = (answers.personality || []).length >= 3;
+                    return (
+                      <Chip
+                        key={p.id}
+                        emoji={p.emoji}
+                        label={p.label}
+                        selected={selected}
+                        disabled={maxReached && !selected}
+                        onClick={() => {
+                          const current = answers.personality || [];
+                          if (selected) {
+                            setAnswer('personality', current.filter((x) => x !== p.id));
+                          } else if (current.length < 3) {
+                            setAnswer('personality', [...current, p.id]);
+                          }
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
             {(answers.personality?.length ?? 0) > 0 && (
-              <p style={{ width: '100%', fontSize: '0.8rem', color: 'var(--color-accent-1)', fontWeight: 600 }}>
-                Đã chọn {answers.personality?.length}/3
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-accent-1)', fontWeight: 600, margin: 0 }}>
+                ✓ Đã chọn {answers.personality?.length}/3 tính cách
               </p>
             )}
           </div>
@@ -523,26 +580,43 @@ function QuizInner() {
 
       case 6:
         return (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.625rem' }}>
-            {INTEREST_OPTIONS.map((i) => {
-              const selected = (answers.interests || []).includes(i.id);
-              return (
-                <Chip
-                  key={i.id}
-                  emoji={i.emoji}
-                  label={i.label}
-                  selected={selected}
-                  onClick={() => {
-                    const current = answers.interests || [];
-                    if (selected) {
-                      setAnswer('interests', current.filter((x) => x !== i.id));
-                    } else {
-                      setAnswer('interests', [...current, i.id]);
-                    }
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {INTEREST_GROUPS.map((group) => (
+              <div key={group.groupTitle} style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                <span
+                  style={{
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    color: 'var(--lavender-light)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
                   }}
-                />
-              );
-            })}
+                >
+                  {group.groupTitle}
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.625rem' }}>
+                  {group.items.map((i) => {
+                    const selected = (answers.interests || []).includes(i.id);
+                    return (
+                      <Chip
+                        key={i.id}
+                        emoji={i.emoji}
+                        label={i.label}
+                        selected={selected}
+                        onClick={() => {
+                          const current = answers.interests || [];
+                          if (selected) {
+                            setAnswer('interests', current.filter((x) => x !== i.id));
+                          } else {
+                            setAnswer('interests', [...current, i.id]);
+                          }
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         );
 
