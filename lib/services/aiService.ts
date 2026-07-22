@@ -80,6 +80,19 @@ export function sanitizeSuggestions(raw: unknown[]): GiftSuggestion[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .filter((item) => {
+      const name = String(item.productName || '').toLowerCase();
+      const cat = String(item.category || '').toLowerCase();
+      const isVoucherOrTicket =
+        name.includes('vé ') ||
+        name.includes('voucher') ||
+        name.includes('coupon') ||
+        name.includes('gift card') ||
+        name.includes('thẻ quà tặng') ||
+        cat.includes('vé') ||
+        cat.includes('voucher');
+      return !isVoucherOrTicket;
+    })
     .map((item, index) => ({
       id: `sg_ai_${index}_${Date.now()}`,
       productName: String(item.productName || 'Món quà ý nghĩa').trim(),
@@ -395,7 +408,7 @@ HỒ SƠ NGƯỜI NHẬN:
 
 YÊU CẦU QUAN TRỌNG:
 1. Mức giá ước tính PHẢI nằm trong dải ngân sách ${answers.budget}.
-2. Đề xuất kết hợp cả đồ dùng vật chất lẫn quà trải nghiệm (vé concert, spa, vé xem phim, khóa học).
+2. CHỈ gợi ý các sản phẩm quà tặng VẬT THỂ THỰC TẾ (đồ dùng, phụ kiện, mỹ phẩm, công nghệ, thời trang, trang sức, đồ decor, sách...). TUYỆT ĐỐI KHÔNG gợi ý các loại vé (vé xem phim, vé concert, vé xem ca nhạc...) hoặc voucher (voucher spa, voucher ăn uống, thẻ nạp, gift card...).
 3. Lý do gợi ý cá nhân hóa sâu sắc (2-3 câu thuyết phục dựa vào tính cách/sở thích).
 4. Trả về CHỈ JSON theo định dạng sau (không có Markdown hay chữ ngoài JSON):
 

@@ -456,15 +456,15 @@ const ALL_PRODUCTS: RawProduct[] = [
     tags: ['máy pha cà phê', 'nespresso', 'cà phê', 'coffee', 'nhà bếp', 'quà cao cấp', 'espresso'],
   },
 
-  // ── Thư giãn & Self-care ──────────────────────────────────
+  // ── Thư giãn & Self-care (Vật thể) ──────────────────────────
   {
-    name: 'Voucher Spa & Massage Body Toàn Thân 90 Phút – Thư Giãn 5 Sao',
-    price: 450000, originalPrice: 800000,
+    name: 'Máy Massage Cổ Vai Gáy Hồng Ngoại 8 Bi Châm Cứu Cao Cấp',
+    price: 450000, originalPrice: 650000,
     imageUrl: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&h=600&fit=crop&q=90',
     rating: 4.9, reviewCount: 2800, sold: 9400, source: 'shopee',
-    affiliateLink: 'https://shopee.vn/search?keyword=voucher+spa+massage+90+phut',
-    discount: 44, badge: '💆 Giảm 44%',
-    tags: ['spa', 'massage', 'thư giãn', 'self-care', 'chăm sóc bản thân', 'trải nghiệm', 'voucher spa'],
+    affiliateLink: 'https://shopee.vn/search?keyword=m%C3%A1y+massage+c%E1%BB%95+vai+g%C3%A1y',
+    discount: 31, badge: '💆 Thư giãn',
+    tags: ['máy massage', 'massage', 'thư giãn', 'self-care', 'chăm sóc bản thân', 'sức khỏe', 'máy massage cổ'],
   },
   {
     name: 'Máy Khuếch Tán Tinh Dầu Gỗ Thông 500ml – Đèn LED 7 Màu',
@@ -485,33 +485,33 @@ const ALL_PRODUCTS: RawProduct[] = [
     tags: ['set tắm', 'muối tắm', 'sữa tắm', 'self-care', 'thư giãn', 'spa tại nhà', 'quà cho nữ', 'chăm sóc bản thân'],
   },
 
-  // ── Digital ───────────────────────────────────────────────
+  // ── Đồ dùng decor & Tiện ích vật thể ─────────────────────────────
   {
-    name: 'Thẻ Nạp Netflix Premium 1 Tháng – 4 Màn Hình 4K Ultra',
-    price: 260000, originalPrice: 310000,
-    imageUrl: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&h=600&fit=crop&q=90',
-    rating: 4.9, reviewCount: 18000, sold: 65000, source: 'shopee',
-    affiliateLink: 'https://shopee.vn/search?keyword=th%E1%BA%BB+n%E1%BA%A1p+netflix+premium',
-    discount: 16, badge: '🎬 Quà số hot',
-    tags: ['netflix', 'streaming', 'phim', 'giải trí', 'thẻ nạp', 'quà số', 'gift card', 'xem phim'],
+    name: 'Đèn Ngủ Mặt Trăng 3D Cảm Ứng 16 Màu Kèm Đế Gỗ Decor',
+    price: 220000, originalPrice: 310000,
+    imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&q=90',
+    rating: 4.9, reviewCount: 12000, sold: 48000, source: 'shopee',
+    affiliateLink: 'https://shopee.vn/search?keyword=%C4%91%E1%BA%B9n+ng%E1%BB%A7+m%E1%BA%B7t+tr%C4%83ng+3d',
+    discount: 29, badge: '🌕 Decor hot',
+    tags: ['đèn ngủ', 'đèn mặt trăng', 'decor', 'phòng ngủ', 'trang trí', 'quà dễ thương', 'đèn 3d'],
   },
   {
-    name: 'Gift Card Steam 500.000đ – Mua Game PC Bất Kỳ',
-    price: 500000, originalPrice: 500000,
-    imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=600&fit=crop&q=90',
-    rating: 4.9, reviewCount: 12000, sold: 44000, source: 'shopee',
-    affiliateLink: 'https://shopee.vn/search?keyword=steam+wallet+code+500000',
-    discount: 0, badge: '🎮 Gamer Gift',
-    tags: ['steam', 'game', 'gift card', 'gaming', 'quà số', 'gamer', 'pc game', 'thẻ nạp'],
+    name: 'Khung Ảnh Điện Tử HD 8 Inch Tự Động Trình Chiếu Kỷ Niệm',
+    price: 890000, originalPrice: 1200000,
+    imageUrl: 'https://images.unsplash.com/photo-1517842645767-c639042777db?w=600&h=600&fit=crop&q=90',
+    rating: 4.9, reviewCount: 3200, sold: 9800, source: 'shopee',
+    affiliateLink: 'https://shopee.vn/search?keyword=khung+%E1%BA%A3nh+%C4%91i%E1%BB%87n+t%E1%BB%AD+8+inch',
+    discount: 26, badge: '🖼️ Kỷ niệm',
+    tags: ['khung ảnh', 'khung ảnh điện tử', 'kỷ niệm', 'ảnh gia đình', 'quà ý nghĩa', 'decor'],
   },
   {
-    name: 'Thẻ Spotify Premium 3 Tháng – Nghe Nhạc Offline Không Quảng Cáo',
-    price: 175000, originalPrice: 200000,
-    imageUrl: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=600&h=600&fit=crop&q=90',
-    rating: 4.9, reviewCount: 8900, sold: 32000, source: 'shopee',
-    affiliateLink: 'https://shopee.vn/search?keyword=spotify+premium+3+th%C3%A1ng',
-    discount: 13, badge: '🎵 Âm nhạc',
-    tags: ['spotify', 'âm nhạc', 'nhạc', 'streaming', 'thẻ nạp', 'quà số', 'gift card', 'nghe nhạc'],
+    name: 'Bình Giữ Nhiệt Inox 304 Lock&Lock LHC4131 450ml Cao Cấp',
+    price: 265000, originalPrice: 380000,
+    imageUrl: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&h=600&fit=crop&q=90',
+    rating: 4.9, reviewCount: 18900, sold: 72000, source: 'shopee',
+    affiliateLink: 'https://shopee.vn/search?keyword=lock+lock+inox+304',
+    discount: 30, badge: '✅ Chính hãng',
+    tags: ['bình giữ nhiệt', 'lock lock', 'inox 304', 'giữ nóng', 'bình nước', 'quà thực tế'],
   },
 ];
 
