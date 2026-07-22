@@ -180,27 +180,6 @@ export default function HomePage() {
           <p style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', marginTop: '0.25rem', letterSpacing: '0.04em' }}>
             ✧ Miễn phí · Không cần đăng ký · Chỉ mất 2 phút ✧
           </p>
-
-          {/* Scroll indicator */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '2rem',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.25rem',
-              color: 'var(--color-text-light)',
-              fontSize: '0.72rem',
-              animation: 'float 2.5s ease-in-out infinite',
-              letterSpacing: '0.06em',
-            }}
-          >
-            <span>cuộn xuống</span>
-            <span style={{ fontSize: '1.1rem' }}>↓</span>
-          </div>
         </section>
 
         <SectionDivider />
