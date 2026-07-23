@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import { useJournalStore } from '@/lib/store/journalStore';
 import { useAuthStore } from '@/lib/store/authStore';
 import { Person, GiftRecord } from '@/types/journal';
+import JournalSuggestModal from '@/components/JournalSuggestModal';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const RELATIONSHIP_OPTIONS = [
@@ -477,11 +478,13 @@ function PersonDetail({
   onBack,
   onEdit,
   onDelete,
+  onSuggest,
 }: {
   person: Person;
   onBack: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onSuggest: () => void;
 }) {
   const router = useRouter();
   const { deleteGiftRecord } = useJournalStore();
@@ -546,7 +549,7 @@ function PersonDetail({
             </p>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', margin: 0 }}>Đặt quà sớm để không quên nhé ✨</p>
           </div>
-          <button onClick={handleQuiz} className="btn-primary" style={{ marginLeft: 'auto', padding: '0.4rem 1rem', fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>Tìm quà →</button>
+          <button onClick={onSuggest} className="btn-primary" style={{ marginLeft: 'auto', padding: '0.4rem 1rem', fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>Gợi ý quà ngay →</button>
         </motion.div>
       )}
 
@@ -578,14 +581,23 @@ function PersonDetail({
         </Panel>
       </div>
 
-      {/* Quick quiz CTA */}
-      <button
-        onClick={handleQuiz}
-        className="btn-primary"
-        style={{ width: '100%', justifyContent: 'center', marginBottom: '1.5rem', fontSize: 'var(--text-base)' }}
-      >
-        🤖 Tìm quà AI cho {person.name} →
-      </button>
+      {/* Action buttons */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
+        <button
+          onClick={onSuggest}
+          className="btn-primary"
+          style={{ justifyContent: 'center', fontSize: 'var(--text-sm)', padding: '0.85rem' }}
+        >
+          🎁 Gợi ý quà mới tại đây ✨
+        </button>
+        <button
+          onClick={handleQuiz}
+          className="btn-secondary"
+          style={{ justifyContent: 'center', fontSize: 'var(--text-sm)', padding: '0.85rem' }}
+        >
+          📝 Làm Quiz đầy đủ →
+        </button>
+      </div>
 
       {/* Gift history */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
@@ -667,6 +679,7 @@ export default function JournalPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const [suggestPerson, setSuggestPerson] = useState<Person | null>(null);
   const [search, setSearch] = useState('');
 
   const activeUserId = user ? user.id : 'guest';
@@ -711,6 +724,7 @@ export default function JournalPage() {
                 onBack={() => setView('list')}
                 onEdit={() => setEditingPerson(selectedPerson)}
                 onDelete={() => { deletePerson(selectedPerson.id); setView('list'); }}
+                onSuggest={() => setSuggestPerson(selectedPerson)}
               />
             </div>
           </div>
@@ -721,6 +735,12 @@ export default function JournalPage() {
               person={editingPerson}
               onClose={() => setEditingPerson(null)}
               onSave={(data) => { updatePerson(editingPerson.id, data); setEditingPerson(null); }}
+            />
+          )}
+          {suggestPerson && (
+            <JournalSuggestModal
+              person={suggestPerson}
+              onClose={() => setSuggestPerson(null)}
             />
           )}
         </AnimatePresence>
@@ -743,7 +763,7 @@ export default function JournalPage() {
               Sổ nhật kí tặng quà
             </h1>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-md)', maxWidth: '480px', margin: '0 auto 1.75rem', lineHeight: 1.7 }}>
-              Lưu sở thích của mọi người — không bao giờ tặng nhầm quà nữa ✨
+              Lưu sở thích & gợi ý quà mới trực tiếp — không bao giờ lặp lại quà cũ ✨
             </p>
             <button
               onClick={() => setShowAddModal(true)}
@@ -772,15 +792,13 @@ export default function JournalPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ fontSize: '1.75rem' }}>{user ? '🟢' : '🔒'}</span>
+              <span style={{ fontSize: '1.5rem' }}>{user ? '☁️' : '🔒'}</span>
               <div>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: user ? '#a7f3d0' : 'var(--lavender-light)' }}>
-                  {user ? `Đã lưu tài khoản: ${user.name}` : 'Lưu trữ nhật kí an toàn'}
+                <p style={{ fontWeight: 700, color: 'var(--cream)', fontSize: 'var(--text-sm)', margin: 0 }}>
+                  {user ? `Đang đồng bộ sổ nhật ký với tài khoản (${user.email})` : 'Nhật ký đang lưu tạm trên thiết bị này (Guest)'}
                 </p>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                  {user
-                    ? `Dữ liệu nhật kí của ${user.email} đang được lưu giữ bền vững trên thiết bị này.`
-                    : 'Đăng nhập để bảo vệ thông tin sở thích người thân & lịch sử tặng quà.'}
+                <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', margin: 0 }}>
+                  {user ? 'Tất cả thông tin người thân và lịch sử quà được lưu trữ an toàn.' : 'Đăng nhập để tự động sao lưu dữ liệu nhật ký của bạn.'}
                 </p>
               </div>
             </div>
@@ -788,38 +806,59 @@ export default function JournalPage() {
               <button
                 onClick={openAuthModal}
                 className="btn-primary"
-                style={{ fontSize: '0.82rem', padding: '0.5rem 1.25rem' }}
+                style={{ padding: '0.4rem 1rem', fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}
               >
-                🔑 Đăng nhập / Tạo tài khoản
+                Đăng nhập ngay
               </button>
             )}
           </div>
 
-          {/* Upcoming birthdays */}
+          {/* Upcoming Birthdays Alert */}
           {upcomingBirthdays.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '2rem' }}>
-              <h2 style={{ fontFamily: "'Comfortaa','Nunito',sans-serif", fontSize: '1.1rem', color: '#f2c4d0', marginBottom: '0.75rem' }}>
-                🎂 Sinh nhật sắp tới
-              </h2>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                background: 'linear-gradient(135deg,rgba(242,196,208,0.2),rgba(212,168,232,0.15))',
+                border: '1px solid rgba(242,196,208,0.35)',
+                borderRadius: '20px',
+                padding: '1.25rem 1.5rem',
+                marginBottom: '2rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.875rem' }}>
+                <span style={{ fontSize: '1.25rem' }}>🎂</span>
+                <h3 style={{ fontFamily: "'Comfortaa','Nunito',sans-serif", fontSize: 'var(--text-base)', color: '#f2c4d0', margin: 0 }}>
+                  Sinh nhật sắp tới trong 30 ngày ({upcomingBirthdays.length})
+                </h3>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                 {upcomingBirthdays.map((p) => {
-                  const [month, day] = p.birthday!.split('/').map(Number);
+                  const [m, d] = p.birthday!.split('/').map(Number);
                   const now = new Date();
-                  const bd = new Date(now.getFullYear(), month - 1, day);
+                  const bd = new Date(now.getFullYear(), m - 1, d);
                   if (bd < now) bd.setFullYear(now.getFullYear() + 1);
                   const days = Math.ceil((bd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
                   return (
                     <button
                       key={p.id}
-                      onClick={() => { setSelectedId(p.id); setView('detail'); }}
-                      style={{ background: 'rgba(242,196,208,0.12)', border: '1px solid rgba(242,196,208,0.3)', borderRadius: '16px', padding: '0.6rem 1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.18s ease' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(242,196,208,0.2)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(242,196,208,0.12)'; }}
+                      onClick={() => setSuggestPerson(p)}
+                      style={{
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(242,196,208,0.3)',
+                        borderRadius: '14px',
+                        padding: '0.5rem 0.875rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        cursor: 'pointer',
+                        fontFamily: "'Nunito',sans-serif",
+                      }}
                     >
                       <span style={{ fontSize: '1.25rem' }}>{p.avatar}</span>
                       <div style={{ textAlign: 'left' }}>
                         <p style={{ fontWeight: 700, color: '#f2c4d0', fontSize: 'var(--text-sm)', margin: 0 }}>{p.name}</p>
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', margin: 0 }}>còn {days} ngày</p>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', margin: 0 }}>còn {days} ngày · ✨ Gợi ý quà</p>
                       </div>
                     </button>
                   );
@@ -861,28 +900,41 @@ export default function JournalPage() {
                       transition={{ delay: i * 0.05 }}
                       onClick={() => { setSelectedId(person.id); setView('detail'); }}
                       className="card"
-                      style={{ padding: '1.5rem', cursor: 'pointer', textAlign: 'center' }}
+                      style={{ padding: '1.5rem', cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                     >
-                      <div style={{ fontSize: '3rem', lineHeight: 1, marginBottom: '0.75rem' }}>{person.avatar}</div>
-                      <h3 style={{ fontFamily: "'Comfortaa','Nunito',sans-serif", fontSize: '1rem', color: '#f0eaff', margin: '0 0 0.25rem' }}>{person.name}</h3>
-                      <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', margin: '0 0 0.875rem' }}>
-                        {relInfo?.emoji} {relInfo?.label || person.relationship}
-                      </p>
-                      {person.giftHistory.length > 0 && (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(212,168,232,0.1)', border: '1px solid rgba(212,168,232,0.2)', borderRadius: '999px', padding: '0.2rem 0.65rem', fontSize: 'var(--text-xs)', color: 'var(--lavender-light)' }}>
-                          🎁 {person.giftHistory.length} quà
-                        </div>
-                      )}
-                      {person.birthday && (() => {
-                        const [m, d] = person.birthday.split('/').map(Number);
-                        const now = new Date();
-                        const bd = new Date(now.getFullYear(), m - 1, d);
-                        if (bd < now) bd.setFullYear(now.getFullYear() + 1);
-                        const days = Math.ceil((bd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                        return days <= 30 ? (
-                          <div style={{ marginTop: '0.5rem', fontSize: 'var(--text-xs)', color: '#f2c4d0' }}>🎂 còn {days} ngày</div>
-                        ) : null;
-                      })()}
+                      <div>
+                        <div style={{ fontSize: '3rem', lineHeight: 1, marginBottom: '0.75rem' }}>{person.avatar}</div>
+                        <h3 style={{ fontFamily: "'Comfortaa','Nunito',sans-serif", fontSize: '1rem', color: '#f0eaff', margin: '0 0 0.25rem' }}>{person.name}</h3>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', margin: '0 0 0.875rem' }}>
+                          {relInfo?.emoji} {relInfo?.label || person.relationship}
+                        </p>
+                        {person.giftHistory.length > 0 && (
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(212,168,232,0.1)', border: '1px solid rgba(212,168,232,0.2)', borderRadius: '999px', padding: '0.2rem 0.65rem', fontSize: 'var(--text-xs)', color: 'var(--lavender-light)', marginBottom: '0.5rem' }}>
+                            🎁 {person.giftHistory.length} quà đã tặng
+                          </div>
+                        )}
+                        {person.birthday && (() => {
+                          const [m, d] = person.birthday.split('/').map(Number);
+                          const now = new Date();
+                          const bd = new Date(now.getFullYear(), m - 1, d);
+                          if (bd < now) bd.setFullYear(now.getFullYear() + 1);
+                          const days = Math.ceil((bd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                          return days <= 30 ? (
+                            <div style={{ marginTop: '0.25rem', fontSize: 'var(--text-xs)', color: '#f2c4d0' }}>🎂 còn {days} ngày</div>
+                          ) : null;
+                        })()}
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSuggestPerson(person);
+                        }}
+                        className="btn-primary"
+                        style={{ marginTop: '1rem', width: '100%', fontSize: '0.78rem', padding: '0.45rem', justifyContent: 'center' }}
+                      >
+                        ✨ Gợi ý quà mới
+                      </button>
                     </motion.div>
                   );
                 })}

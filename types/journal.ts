@@ -25,3 +25,10 @@ export interface Person {
   giftHistory: GiftRecord[];
   createdAt: string;
 }
+
+export interface JournalSuggestRequest {
+  person: Person;
+  occasion: string;
+  budget?: string;
+  customNote?: string;
+}

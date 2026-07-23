@@ -580,4 +580,140 @@ Yêu cầu:
       provider: 'fallback',
     };
   }
+
+  /**
+   * Journal AI Advisor — Anti-duplicate gift suggestions based on person profile & gift history
+   */
+  static async getJournalGiftSuggestions(request: {
+    person: {
+      name: string;
+      relationship: string;
+      gender?: string;
+      ageRange?: string;
+      zodiac?: string;
+      interests: string[];
+      personality: string[];
+      notes?: string;
+      giftHistory: Array<{ giftName: string; occasion: string }>;
+    };
+    occasion: string;
+    budget?: string;
+    customNote?: string;
+  }): Promise<{ suggestions: GiftSuggestion[]; source: 'ai' | 'fallback' }> {
+    const { person, occasion, budget, customNote } = request;
+    const pastGifts = (person.giftHistory || []).map((g) => g.giftName).filter(Boolean);
+
+    const prompt = `Bạn là một Chuyên Gia Tư Vấn Quà Tặng Cá Nhân Hóa & Chống Trùng Quà (Journal Gift Advisor) tại Việt Nam với 10 năm kinh nghiệm.
+Nhiệm vụ của bạn là phân tích hồ sơ người nhận trong Nhật Ký và đề xuất danh sách 6 MÓN QUÀ VẬT THỂ MỚI HOÀN TOÀN, VỪA ĐỘC ĐÁO VỪA Ý NGHĨA.
+
+============================================================
+👤 HỒ SƠ NGƯỜI NHẬN TRONG NHẬT KÝ:
+- Tên người nhận: ${person.name}
+- Mối quan hệ: ${person.relationship}
+- Giới tính: ${person.gender || 'Chưa rõ'}
+- Độ tuổi: ${person.ageRange || 'Chưa rõ'}
+- Cung hoàng đạo: ${person.zodiac || 'Chưa rõ'}
+- Sở thích: ${(person.interests || []).join(', ') || 'Chưa chọn'}
+- Tính cách: ${(person.personality || []).join(', ') || 'Chưa chọn'}
+${person.notes ? `- Ghi chú cá nhân: "${person.notes}"` : ''}
+
+============================================================
+🎁 THÔNG TIN LẦN TẶNG QUÀ NÀY:
+- Dịp tặng: ${occasion}
+- Ngân sách dự kiến: ${budget || '300.000đ - 1.000.000đ'}
+${customNote ? `- Ghi chú thêm: "${customNote}"` : ''}
+
+============================================================
+🚫 DANH SÁCH CÁC MÓN QUÀ ĐÃ TẶNG TRONG QUÁ KHỨ (TUYỆT ĐỐI KHÔNG GỢI Ý LẶP LẠI VÀ KHÔNG GỢI Ý CÁC SẢN PHẨM TƯƠNG TỰ/ĐỒNG NGHĨA):
+${pastGifts.length > 0 ? pastGifts.map((g, i) => `${i + 1}. "${g}"`).join('\n') : '(Chưa có món quà nào trong lịch sử)'}
+
+============================================================
+⚠️ NGUYÊN TẮC CHỐNG TRÙNG VÀ CHẤT LƯỢNG QUÀ TẶNG BẮT BUỘC (STRICT RULES):
+1. TUYỆT ĐỐI KHÔNG TRÙNG QUÀ CŨ: AI không được gợi ý bất kỳ món quà nào lặp lại các tên quà trong danh sách loại trừ trên (kể cả tên đồng nghĩa hoặc biến thể thương hiệu như "nước hoa Chanel" vs "nước hoa Dior").
+2. ĐỔI MỚI DANH MỤC SẢN PHẨM: Nếu các món quà cũ thuộc nhóm nào (ví dụ: Nước hoa/Skincare), HÃY ƯU TIÊN GỢI Ý SẢN PHẨM THUỘC NHÓM KHÁC HẲN (như Trang sức, Đồ decor phòng, Đồ dùng sức khỏe, Đồ công nghệ, Sách...).
+3. LÝ DO CHỌN QUÀ CÓ GIẢI THÍCH ĐỔI MỚI (REASON): Trong câu lý do (2-3 câu), ngoài việc giải thích vì sao hợp với [Sở thích] + [Tính cách] người nhận, HÃY GIẢI THÍCH NGẮN GỌN vì sao món quà mới này mang đến trải nghiệm tươi mới khác biệt so với các món quà đã tặng trước đó.
+4. CHỈ MÓN QUÀ VẬT THỂ: Tuyệt đối KHÔNG gợi ý các loại vé (vé phim, concert...) hoặc voucher/giftcard.
+
+============================================================
+CHỈ TRẢ VỀ JSON HỢP LỆ THEO ĐÚNG CẤU TRÚC (KHÔNG VIẾT CHỮ NGOÀI JSON):
+{"suggestions":[{"productName":"...","category":"...","estimatedPriceRange":"...","reason":"...","searchKeyword":"...","emoji":"..."}]}`;
+
+    // 1. Try Claude
+    const anthropicKey = SmartKeyManager.getActiveKey('anthropic');
+    if (anthropicKey) {
+      try {
+        const config = SmartKeyManager.getModelConfig('anthropic', 'complex');
+        const startTime = Date.now();
+        const response = await fetchWithTimeoutAndRetry(
+          'https://api.anthropic.com/v1/messages',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': anthropicKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({
+              model: config.model,
+              max_tokens: config.maxTokens,
+              temperature: config.temperature,
+              messages: [{ role: 'user', content: prompt }],
+            }),
+          },
+          config.timeoutMs,
+          2
+        );
+        const data = await response.json();
+        const text = data.content?.[0]?.text || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          const suggestions = sanitizeSuggestions(parsed.suggestions);
+          if (suggestions.length > 0) {
+            SmartKeyManager.reportSuccess('anthropic', anthropicKey, Date.now() - startTime);
+            return { suggestions, source: 'ai' };
+          }
+        }
+      } catch (err: unknown) {
+        SmartKeyManager.reportFailure('anthropic', anthropicKey, undefined, String(err));
+      }
+    }
+
+    // 2. Try Gemini
+    const geminiKey = SmartKeyManager.getActiveKey('gemini');
+    if (geminiKey) {
+      try {
+        const config = SmartKeyManager.getModelConfig('gemini', 'complex');
+        const startTime = Date.now();
+        const response = await fetchWithTimeoutAndRetry(
+          `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { responseMimeType: 'application/json', maxOutputTokens: config.maxTokens, temperature: config.temperature },
+            }),
+          },
+          config.timeoutMs,
+          2
+        );
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          const suggestions = sanitizeSuggestions(parsed.suggestions);
+          if (suggestions.length > 0) {
+            SmartKeyManager.reportSuccess('gemini', geminiKey, Date.now() - startTime);
+            return { suggestions, source: 'ai' };
+          }
+        }
+      } catch (err: unknown) {
+        SmartKeyManager.reportFailure('gemini', geminiKey, undefined, String(err));
+      }
+    }
+
+    return { suggestions: [], source: 'fallback' };
+  }
 }
