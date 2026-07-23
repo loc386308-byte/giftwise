@@ -314,7 +314,8 @@ export class AIService {
       }
     }
 
-    return { suggestions: [], source: 'fallback' };
+    const fallbackSuggestions = AIService.generateFallbackSuggestions(answers);
+    return { suggestions: fallbackSuggestions, source: 'fallback' };
   }
 
   /**
@@ -582,6 +583,69 @@ Yêu cầu:
   }
 
   /**
+   * Master Heuristic Fallback Generator when API keys are not available
+   */
+  public static generateFallbackSuggestions(answers: QuizAnswers): GiftSuggestion[] {
+    const defaultSuggestions: GiftSuggestion[] = [
+      {
+        id: `fall_1_${Date.now()}`,
+        productName: 'Đèn Ngủ Chiếu Bầu Trời Sao Galaxy Starry Projector 3D',
+        category: 'Decor phòng ngủ & Thư giãn',
+        estimatedPriceRange: '350.000đ – 420.000đ',
+        reason: 'Chiếu bầu trời sao ngân hà lung linh huyền ảo vỗ về giấc ngủ. Món quà chứa đựng thông điệp yêu thương, biến phòng ngủ thành không gian thư giãn tuyệt vời.',
+        searchKeyword: 'đèn ngủ chiếu bầu trời sao galaxy starry projector 3d',
+        emoji: '🌌',
+      },
+      {
+        id: `fall_2_${Date.now()}`,
+        productName: 'Vòng Tay Bạc S925 Khắc Ngày Kỷ Niệm & Tên Cá Nhân Hóa',
+        category: 'Trang sức cá nhân hóa',
+        estimatedPriceRange: '280.000đ – 350.000đ',
+        reason: 'Chất liệu bạc S925 thật khắc tên/ngày kỷ niệm riêng biệt — biểu tượng tình cảm bền chặt và gắn kết.',
+        searchKeyword: 'vòng tay bạc s925 khắc tên kỷ niệm',
+        emoji: '✨',
+      },
+      {
+        id: `fall_3_${Date.now()}`,
+        productName: 'Đài Radio Bluetooth Kiểu Cổ Điển Vintage Divoom Ditoo Pro',
+        category: 'Công nghệ & Decor',
+        estimatedPriceRange: '1.290.000đ – 1.490.000đ',
+        reason: 'Thiết kế hoài cổ siêu đáng yêu kèm màn hình pixel — vừa nghe nhạc vừa làm điểm nhấn decor.',
+        searchKeyword: 'loa bluetooth divoom ditoo pro vintage',
+        emoji: '📻',
+      },
+      {
+        id: `fall_4_${Date.now()}`,
+        productName: 'Chậu Cây Xanh Bonsai Tiểu Cảnh Cây Kim Ngân Phong Thủy',
+        category: 'Cây cảnh & Phong thủy',
+        estimatedPriceRange: '220.000đ – 280.000đ',
+        reason: 'Cây kim ngân mang ý nghĩa bình an, tài lộc và thanh lọc không khí — món quà xanh mát vun đắp tinh thần.',
+        searchKeyword: 'chậu cây bonsai kim ngân phong thủy mini',
+        emoji: '🪴',
+      },
+      {
+        id: `fall_5_${Date.now()}`,
+        productName: 'Set Ấm Trà Thủy Tinh Chịu Nhiệt Kèm 6 Tách & Trà Hoa Cúc Hoàng Gia',
+        category: 'Chăm sóc sức khỏe',
+        estimatedPriceRange: '320.000đ – 390.000đ',
+        reason: 'Thủy tinh chịu nhiệt cao kèm trà hoa cúc thư giãn — thói quen thưởng trà thanh lọc tâm hồn mỗi sáng.',
+        searchKeyword: 'set ấm trà thủy tinh chịu nhiệt kèm trà hoa cúc',
+        emoji: '🍵',
+      },
+      {
+        id: `fall_6_${Date.now()}`,
+        productName: 'Gối Massage Cổ Vai Gáy Cao Su Non Ergonomic Chống Đau Mỏi',
+        category: 'Sức khỏe & Giấc ngủ',
+        estimatedPriceRange: '450.000đ – 520.000đ',
+        reason: 'Thiết kế chuẩn y khoa nâng đỡ cột sống cổ — mang lại giấc ngủ ngon và chăm sóc sức khỏe lâu dài.',
+        searchKeyword: 'gối cao su non ergonomic nâng đỡ cổ vai gáy',
+        emoji: '💤',
+      },
+    ];
+    return defaultSuggestions;
+  }
+
+  /**
    * Journal AI Advisor — Anti-duplicate gift suggestions based on person profile & gift history
    */
   static async getJournalGiftSuggestions(request: {
@@ -714,6 +778,29 @@ CHỈ TRẢ VỀ JSON HỢP LỆ THEO ĐÚNG CẤU TRÚC (KHÔNG VIẾT CHỮ NG
       }
     }
 
-    return { suggestions: [], source: 'fallback' };
+    // Fallback heuristic engine if AI fails or no key
+    const fallbackAnswers: QuizAnswers = {
+      occasion,
+      relationship: person.relationship || 'Bạn bè',
+      gender: person.gender || 'Khác',
+      ageRange: person.ageRange || '19-25 tuổi',
+      zodiac: person.zodiac || '',
+      personality: person.personality || [],
+      interests: person.interests || [],
+      budget: budget || '300.000đ - 1.000.000đ',
+      customDescription: customNote || person.notes || '',
+    };
+
+    const fallbackAll = AIService.generateFallbackSuggestions(fallbackAnswers);
+    const pastGiftsLower = pastGifts.map((g) => g.toLowerCase().trim());
+    const filteredFallback = fallbackAll.filter((item) => {
+      const nameL = item.productName.toLowerCase().trim();
+      return !pastGiftsLower.some((past) => past.includes(nameL) || nameL.includes(past));
+    });
+
+    return {
+      suggestions: filteredFallback.length > 0 ? filteredFallback : fallbackAll,
+      source: 'fallback',
+    };
   }
 }
