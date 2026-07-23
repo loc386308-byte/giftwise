@@ -1,6 +1,6 @@
 export interface KeyStatus {
   key: string;
-  provider: 'anthropic' | 'gemini';
+  provider: 'groq' | 'anthropic' | 'gemini';
   isActive: boolean;
   failureCount: number;
   rateLimitedUntil: number;
@@ -11,12 +11,30 @@ export interface KeyStatus {
 export type TaskComplexity = 'complex' | 'simple';
 
 export class SmartKeyManager {
+  private static groqKeys: KeyStatus[] = [];
   private static anthropicKeys: KeyStatus[] = [];
   private static geminiKeys: KeyStatus[] = [];
   private static initialized = false;
 
   private static initializeKeys() {
     if (this.initialized) return;
+
+    // Load Groq Keys
+    const rawGroq = process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '';
+    const rawGroqList = rawGroq
+      .split(',')
+      .map((k) => k.trim())
+      .filter((k) => k.length > 5);
+
+    this.groqKeys = rawGroqList.map((key) => ({
+      key,
+      provider: 'groq',
+      isActive: true,
+      failureCount: 0,
+      rateLimitedUntil: 0,
+      totalCalls: 0,
+      lastUsedAt: 0,
+    }));
 
     // Load Anthropic Keys
     const rawAnthropic = process.env.ANTHROPIC_API_KEYS || process.env.ANTHROPIC_API_KEY || '';
@@ -58,9 +76,9 @@ export class SmartKeyManager {
   /**
    * Select best active key for provider. If rate limited, un-mark after timeout.
    */
-  public static getActiveKey(provider: 'anthropic' | 'gemini'): string | null {
+  public static getActiveKey(provider: 'groq' | 'anthropic' | 'gemini'): string | null {
     this.initializeKeys();
-    const list = provider === 'anthropic' ? this.anthropicKeys : this.geminiKeys;
+    const list = provider === 'groq' ? this.groqKeys : provider === 'anthropic' ? this.anthropicKeys : this.geminiKeys;
     const now = Date.now();
 
     for (const item of list) {
@@ -88,9 +106,9 @@ export class SmartKeyManager {
   /**
    * Report success for a key
    */
-  public static reportSuccess(provider: 'anthropic' | 'gemini', key: string, latencyMs: number) {
+  public static reportSuccess(provider: 'groq' | 'anthropic' | 'gemini', key: string, latencyMs: number) {
     this.initializeKeys();
-    const list = provider === 'anthropic' ? this.anthropicKeys : this.geminiKeys;
+    const list = provider === 'groq' ? this.groqKeys : provider === 'anthropic' ? this.anthropicKeys : this.geminiKeys;
     const item = list.find((k) => k.key === key);
     if (item) {
       item.failureCount = Math.max(0, item.failureCount - 1);
@@ -102,9 +120,9 @@ export class SmartKeyManager {
   /**
    * Report failure / rate limit / quota error for a key
    */
-  public static reportFailure(provider: 'anthropic' | 'gemini', key: string, statusCode?: number, errorMsg?: string) {
+  public static reportFailure(provider: 'groq' | 'anthropic' | 'gemini', key: string, statusCode?: number, errorMsg?: string) {
     this.initializeKeys();
-    const list = provider === 'anthropic' ? this.anthropicKeys : this.geminiKeys;
+    const list = provider === 'groq' ? this.groqKeys : provider === 'anthropic' ? this.anthropicKeys : this.geminiKeys;
     const item = list.find((k) => k.key === key);
     if (item) {
       item.failureCount++;

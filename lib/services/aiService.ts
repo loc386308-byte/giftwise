@@ -229,8 +229,50 @@ export class AIService {
       return { suggestions: cached, source: 'cache' };
     }
 
+    const groqKey = SmartKeyManager.getActiveKey('groq');
     const anthropicKey = SmartKeyManager.getActiveKey('anthropic');
     const geminiKey = SmartKeyManager.getActiveKey('gemini');
+
+    // 1. Try Groq Llama 3.3 70B (Lightning fast)
+    if (groqKey) {
+      try {
+        const startTime = Date.now();
+        const prompt = AIService.buildSuggestPrompt(answers);
+        const response = await fetchWithTimeoutAndRetry(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${groqKey}`,
+            },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.7,
+              max_tokens: 1500,
+              response_format: { type: 'json_object' },
+            }),
+          },
+          10000,
+          2
+        );
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          const suggestions = sanitizeSuggestions(parsed.suggestions);
+          if (suggestions.length > 0) {
+            SmartKeyManager.reportSuccess('groq', groqKey, Date.now() - startTime);
+            setCached(cacheKey, suggestions);
+            return { suggestions, source: 'ai' };
+          }
+        }
+      } catch (err: unknown) {
+        SmartKeyManager.reportFailure('groq', groqKey, undefined, String(err));
+      }
+    }
 
     // 2. Call Anthropic Claude API if key exists
     if (anthropicKey) {
@@ -509,7 +551,41 @@ Yêu cầu:
 3. Lồng ghép khéo léo ý nghĩa món quà "${params.giftName}".
 4. Trả về CHỈ VĂN BẢN LỜI CHÚC (Không ghi tiêu đề hay ngoặc kép).`;
 
-    // 1. Try Anthropic Claude
+    // 1. Try Groq (Super fast card writer)
+    const groqKey = SmartKeyManager.getActiveKey('groq');
+    if (groqKey) {
+      try {
+        const startTime = Date.now();
+        const response = await fetchWithTimeoutAndRetry(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${groqKey}`,
+            },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.7,
+              max_tokens: 300,
+            }),
+          },
+          8000,
+          1
+        );
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content?.trim();
+        if (text) {
+          SmartKeyManager.reportSuccess('groq', groqKey, Date.now() - startTime);
+          return { cardText: text, provider: 'groq' };
+        }
+      } catch (err: unknown) {
+        SmartKeyManager.reportFailure('groq', groqKey, undefined, String(err));
+      }
+    }
+
+    // 2. Try Anthropic Claude
     const anthropicKey = SmartKeyManager.getActiveKey('anthropic');
     if (anthropicKey) {
       const config = SmartKeyManager.getModelConfig('anthropic', 'simple');
@@ -702,7 +778,47 @@ ${pastGifts.length > 0 ? pastGifts.map((g, i) => `${i + 1}. "${g}"`).join('\n') 
 CHỈ TRẢ VỀ JSON HỢP LỆ THEO ĐÚNG CẤU TRÚC (KHÔNG VIẾT CHỮ NGOÀI JSON):
 {"suggestions":[{"productName":"...","category":"...","estimatedPriceRange":"...","reason":"...","searchKeyword":"...","emoji":"..."}]}`;
 
-    // 1. Try Claude
+    // 1. Try Groq (Ultra-fast Llama 3.3 70B)
+    const groqKey = SmartKeyManager.getActiveKey('groq');
+    if (groqKey) {
+      try {
+        const startTime = Date.now();
+        const response = await fetchWithTimeoutAndRetry(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${groqKey}`,
+            },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.7,
+              max_tokens: 1500,
+              response_format: { type: 'json_object' },
+            }),
+          },
+          10000,
+          2
+        );
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          const suggestions = sanitizeSuggestions(parsed.suggestions);
+          if (suggestions.length > 0) {
+            SmartKeyManager.reportSuccess('groq', groqKey, Date.now() - startTime);
+            return { suggestions, source: 'ai' };
+          }
+        }
+      } catch (err: unknown) {
+        SmartKeyManager.reportFailure('groq', groqKey, undefined, String(err));
+      }
+    }
+
+    // 2. Try Claude
     const anthropicKey = SmartKeyManager.getActiveKey('anthropic');
     if (anthropicKey) {
       try {
