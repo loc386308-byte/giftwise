@@ -278,7 +278,7 @@ export default function ResultsPage() {
     setSelectedGiftId(gift.id);
     const exactKeyword = gift.searchKeyword || gift.productName;
     router.push(
-      `/results/${destination}?keyword=${encodeURIComponent(exactKeyword)}&gift=${encodeURIComponent(gift.productName)}`
+      `/results/${destination}?keyword=${encodeURIComponent(exactKeyword)}&gift=${encodeURIComponent(gift.productName)}&price=${encodeURIComponent(gift.estimatedPriceRange)}`
     );
   };
 

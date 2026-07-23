@@ -567,12 +567,36 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const keyword = searchParams.get('keyword') || '';
     const giftName = searchParams.get('gift') || keyword;
+    const priceParam = searchParams.get('price') || '';
+
+    // Parse target price range if available (e.g. "1.100.000đ – 1.400.000đ")
+    let targetMin = 0;
+    let targetMax = 0;
+    if (priceParam) {
+      const nums = priceParam.replace(/[^0-9\s–-]/g, '').split(/[–-]/).map((s) => parseInt(s.trim().replace(/\s/g, ''), 10)).filter((n) => !isNaN(n) && n > 0);
+      if (nums.length >= 2) {
+        targetMin = nums[0] < 1000 ? nums[0] * 1000 : nums[0];
+        targetMax = nums[1] < 1000 ? nums[1] * 1000 : nums[1];
+      } else if (nums.length === 1) {
+        const val = nums[0] < 1000 ? nums[0] * 1000 : nums[0];
+        targetMin = Math.round(val * 0.85);
+        targetMax = Math.round(val * 1.15);
+      }
+    }
 
     let products: Product[] = [];
 
     // 1. Call AIService (handles cache, Claude/Gemini AI, retries, timeout, JSON sanitizing)
-    const { products: aiProducts, source } = await AIService.getOnlineProducts(keyword, giftName);
+    const { products: aiProducts, source } = await AIService.getOnlineProducts(keyword, giftName, priceParam);
     products = aiProducts;
+
+    // Ensure all AI returned products have high-definition resolved image URLs matching giftName
+    if (products.length > 0) {
+      products = products.map((p) => ({
+        ...p,
+        imageUrl: resolveProductImage(p.name || giftName || keyword, p.imageUrl),
+      }));
+    }
 
     // 2. Fallback: score all catalogue products by relevance to keyword + giftName
     if (products.length === 0) {
@@ -589,32 +613,44 @@ export async function GET(request: NextRequest) {
         score: scoreProduct(item, keyword, giftName),
       })).sort((a, b) => b.score - a.score);
 
-      // Take top 6 (min score 0 — always show something)
+      // Take top 6
       const topItems = scored.slice(0, 6);
 
-      products = topItems.map(({ item }, index) => ({
-        id: `mock_${index}`,
-        name: item.name,
-        price: item.price,
-        originalPrice: item.originalPrice,
-        imageUrl: resolveProductImage(item.name, item.imageUrl),
-        rating: item.rating,
-        reviewCount: item.reviewCount,
-        sold: item.sold,
-        source: item.source as 'shopee' | 'tiktok',
-        affiliateLink: item.affiliateLink || (item.source === 'shopee' ? shopeeUrl : tiktokUrl),
-        discount: item.discount,
-        badge: item.badge,
-        sizes: item.sizes,
-      }));
+      products = topItems.map(({ item }, index) => {
+        let finalPrice = item.price;
+        let finalOriginal = item.originalPrice || Math.round(item.price * 1.25);
 
-      // If top score is very low, the keyword is generic — override affiliateLinks to point to search
+        // Adjust price to target range if specified
+        if (targetMin > 0 && targetMax > 0) {
+          const mid = Math.round((targetMin + targetMax) / 2);
+          const variance = (index % 3 - 1) * 0.08 * mid; // minor natural price variation
+          finalPrice = Math.max(targetMin, Math.min(targetMax, Math.round(mid + variance)));
+          finalOriginal = Math.round(finalPrice * 1.25);
+        }
+
+        return {
+          id: `mock_${index}_${Date.now()}`,
+          name: item.name,
+          price: finalPrice,
+          originalPrice: finalOriginal,
+          imageUrl: resolveProductImage(item.name || giftName || keyword, item.imageUrl),
+          rating: item.rating,
+          reviewCount: item.reviewCount,
+          sold: item.sold,
+          source: item.source as 'shopee' | 'tiktok',
+          affiliateLink: item.affiliateLink || (item.source === 'shopee' ? shopeeUrl : tiktokUrl),
+          discount: Math.max(5, Math.min(75, Math.round(((finalOriginal - finalPrice) / finalOriginal) * 100))),
+          badge: item.badge,
+          sizes: item.sizes,
+        };
+      });
+
+      // If top score is low, override affiliateLinks to point to search
       const topScore = scored[0]?.score ?? 0;
       if (topScore < 3) {
         products = products.map((p) => ({
           ...p,
-          affiliateLink:
-            p.source === 'shopee' ? shopeeUrl : tiktokUrl,
+          affiliateLink: p.source === 'shopee' ? shopeeUrl : tiktokUrl,
         }));
       }
     }
